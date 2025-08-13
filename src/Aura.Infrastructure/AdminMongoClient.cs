@@ -1,14 +1,16 @@
 using Aura.Domain.Interfaces;
 using Aura.Domain.Models;
+using Aura.Infrastructure.Mappers;
+using Aura.Infrastructure.Models;
 using MongoDB.Driver;
 
 namespace Aura.Infrastructure;
 
 public sealed class AdminMongoClient : IAdminRepository
 {
-    private readonly IMongoCollection<Admin> _admins;
+    private readonly IMongoCollection<AdminDbModel> _admins;
 
-    public AdminMongoClient(MongoStore store)
+    public AdminMongoClient(MongoCollectionsProvider store)
     {
         _admins = store.Admins;
     }

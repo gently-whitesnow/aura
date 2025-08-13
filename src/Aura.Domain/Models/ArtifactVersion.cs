@@ -1,7 +1,6 @@
 namespace Aura.Domain.Models;
 public sealed class ArtifactVersion
 {
-    public string Id { get; set; } = default!;
     public ArtifactType Type { get; set; }
     public string ArtifactKey { get; set; } = default!; // lc
     public int Version { get; set; } = default!;     // 1-2-3-

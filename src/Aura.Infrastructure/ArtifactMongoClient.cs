@@ -1,6 +1,8 @@
 using System.Text.RegularExpressions;
 using Aura.Domain.Interfaces;
 using Aura.Domain.Models;
+using Aura.Infrastructure.Mappers;
+using Aura.Infrastructure.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -8,26 +10,27 @@ namespace Aura.Infrastructure;
 
 public sealed class ArtifactMongoClient : IArtifactRepository
 {
-    private readonly IMongoCollection<Artifact> _artifacts;
+    private readonly IMongoCollection<ArtifactDbModel> _artifacts;
 
-    public ArtifactMongoClient(MongoStore store)
+    public ArtifactMongoClient(MongoCollectionsProvider store)
     {
         _artifacts = store.Artifacts;
     }
 
     public async Task<Artifact?> GetAsync(ArtifactType type, string key, CancellationToken ct)
     {
-        return await _artifacts
+        var db = await _artifacts
             .Find(a => a.Type == type && a.Key == key)
             .FirstOrDefaultAsync(ct);
+        return db?.ToDomain();
     }
 
     public async Task UpsertAsync(Artifact artifact, CancellationToken ct)
     {
         // гарантирует уникальность (type,key) через уникальный индекс
-        var filter = Builders<Artifact>.Filter.Where(a => a.Type == artifact.Type && a.Key == artifact.Key);
+        var filter = Builders<ArtifactDbModel>.Filter.Where(a => a.Type == artifact.Type && a.Key == artifact.Key);
 
-        var update = Builders<Artifact>.Update
+        var update = Builders<ArtifactDbModel>.Update
             .SetOnInsert(a => a.Type, artifact.Type)
             .SetOnInsert(a => a.Key, artifact.Key)
             .SetOnInsert(a => a.CreatedAt, artifact.CreatedAt)
@@ -36,20 +39,21 @@ public sealed class ArtifactMongoClient : IArtifactRepository
             .Set(a => a.UpdatedAt, artifact.UpdatedAt)
             .Set(a => a.UpdatedBy, artifact.UpdatedBy);
 
-        _ = await _artifacts.FindOneAndUpdateAsync(
+        var db = await _artifacts.FindOneAndUpdateAsync(
             filter, update,
-            new FindOneAndUpdateOptions<Artifact>
+            new FindOneAndUpdateOptions<ArtifactDbModel>
             {
                 IsUpsert = true,
                 ReturnDocument = ReturnDocument.After
             },
             ct);
+        _ = db?.ToDomain();
     }
 
     public async Task SetActiveVersionAsync(ArtifactType type, string key, int version, string updatedBy, DateTime now, CancellationToken ct)
     {
-        var filter = Builders<Artifact>.Filter.Where(a => a.Type == type && a.Key == key);
-        var update = Builders<Artifact>.Update
+        var filter = Builders<ArtifactDbModel>.Filter.Where(a => a.Type == type && a.Key == key);
+        var update = Builders<ArtifactDbModel>.Update
             .Set(a => a.ActiveVersion, version)
             .Set(a => a.UpdatedAt, now)
             .Set(a => a.UpdatedBy, updatedBy);
@@ -61,19 +65,20 @@ public sealed class ArtifactMongoClient : IArtifactRepository
 
     public async Task<List<Artifact>> ListAsync(ArtifactType type, string? query, CancellationToken ct)
     {
-        var filter = Builders<Artifact>.Filter.Eq(a => a.Type, type);
+        var filter = Builders<ArtifactDbModel>.Filter.Eq(a => a.Type, type);
 
         if (!string.IsNullOrWhiteSpace(query))
         {
             // поиск по title (регистронезависимо)
             var rx = new BsonRegularExpression(new Regex(Regex.Escape(query), RegexOptions.IgnoreCase));
-            filter &= Builders<Artifact>.Filter.Regex(a => a.Title, rx);
+            filter &= Builders<ArtifactDbModel>.Filter.Regex(a => a.Title, rx);
         }
 
-        return await _artifacts
+        var list = await _artifacts
             .Find(filter)
             .SortBy(a => a.Title)
             .ToListAsync(ct);
+        return list.ConvertAll(a => a.ToDomain());
     }
 
     public Task DeleteAsync(ArtifactType type, string key, CancellationToken ct)
