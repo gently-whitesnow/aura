@@ -1,4 +1,4 @@
-using Aura.Domain;
+using Aura.Domain.Models;
 using MongoDB.Driver;
 
 namespace Aura.Infrastructure;

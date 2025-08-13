@@ -1,27 +1,25 @@
-﻿// .NET 9, единый веб-хост: MCP (WebSocket) + HTTP Admin API.
-// MCP транспорт и хендлеры подключаются через официальный C# MCP SDK.
-
-using Aura.Domain;
+﻿using Aura.Domain;
 using Aura.Infrastructure;
 using Aura.Domain.Interfaces;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol;
+using Aura.Server;
+using Aura.Domain.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Конфигурация окружения ---
+// Конфигурация окружения
 var mongoConn = Environment.GetEnvironmentVariable("AURA_MONGO_CONN") ?? "mongodb://localhost:27017";
 var mongoDb   = Environment.GetEnvironmentVariable("AURA_MONGO_DB")   ?? "aura";
 
-// --- DI ---
+// DI
 builder.Services.AddSingleton(new MongoStore(mongoConn, mongoDb));
 builder.Services.AddSingleton<IArtifactRepository, ArtifactMongoClient>();
 builder.Services.AddSingleton<IArtifactVersionRepository, ArtifactVersionMongoClient>();
 builder.Services.AddSingleton<IAdminRepository, AdminMongoClient>();
 builder.Services.AddSingleton<ArtifactService>();
 
-// === MCP SDK ===
-// Регистрация сервера MCP + обработчики Prompts/Resources через официальный SDK.
+// MCP SDK
 builder.Services
     .AddMcpServer(options =>
     {
@@ -53,13 +51,13 @@ builder.Services
 
         return new GetPromptResult
         {
-            Description = data.title,
+            Description = data.Title,
             Messages =
             {
                 new PromptMessage
                 {
                     Role = Role.User,
-                    Content = new TextContentBlock { Text = data.body ?? string.Empty }
+                    Content = new TextContentBlock { Text = data.Body ?? string.Empty }
                 }
             }
         };
@@ -92,7 +90,7 @@ builder.Services
         {
             Contents =
             {
-                new TextResourceContents { Text = data.template ?? string.Empty }
+                new TextResourceContents { Text = data.Template ?? string.Empty }
             }
         };
     });
@@ -102,6 +100,6 @@ var app = builder.Build();
 
 app.MapMcp("/mcp");
 
-app.MapAdminApi(); 
+app.MapUiApi(); 
 
 app.Run();

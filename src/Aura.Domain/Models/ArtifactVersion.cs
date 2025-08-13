@@ -1,5 +1,4 @@
-namespace Aura.Domain;
-
+namespace Aura.Domain.Models;
 public sealed class ArtifactVersion
 {
     public string Id { get; set; } = default!;

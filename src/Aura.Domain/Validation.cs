@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Aura.Domain.Models;
 
 namespace Aura.Domain;
 public static class Validation

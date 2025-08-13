@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
-using Aura.Domain;
 using Aura.Domain.Interfaces;
+using Aura.Domain.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 

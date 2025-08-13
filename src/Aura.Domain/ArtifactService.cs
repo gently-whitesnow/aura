@@ -1,5 +1,6 @@
 // Aura.Domain/ArtifactUseCases.cs
 using Aura.Domain.Interfaces;
+using Aura.Domain.Models;
 
 namespace Aura.Domain;
 
@@ -55,14 +56,13 @@ public sealed class ArtifactService
         v.Status = VersionStatus.Approved;
         v.ApprovedAt = DateTime.UtcNow;
         v.ApprovedBy = adminLogin;
-        // пере-сохранение immutable версии можно сделать как patch-вставку/replace,
-        // но на уровне репозитория — это одна операция (деталь инфры).
-        await _versions.InsertAsync(v, ct); // либо UpdateAsync(v) — как удобнее в инфре
+
+        await _versions.UpdateAsync(v, ct);
 
         await _artifacts.SetActiveVersionAsync(type, key, version, adminLogin, DateTime.UtcNow, ct);
     }
 
-    public async Task<(string title, string? body, string? template, string[]? placeholders, int version)?> GetActiveAsync(
+    public async Task<ArtifactVersion?> GetActiveAsync(
         ArtifactType type, string rawKey, CancellationToken ct)
     {
         var key = Validation.NormalizeKey(rawKey);
@@ -72,7 +72,7 @@ public sealed class ArtifactService
         var v = await _versions.GetAsync(type, key, art.ActiveVersion.Value, ct);
         if (v is null || v.Status != VersionStatus.Approved) return null;
 
-        return (v.Title, v.Body, v.Template, v.Placeholders, v.Version);
+        return v;
     }
 
     public Task<List<Artifact>> ListAsync(ArtifactType type, string? q, CancellationToken ct)

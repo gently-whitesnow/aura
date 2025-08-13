@@ -1,4 +1,4 @@
-namespace Aura.Domain;
+namespace Aura.Domain.Models;
 
 public sealed class Artifact
 {
