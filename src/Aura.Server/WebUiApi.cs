@@ -53,6 +53,23 @@ namespace Aura.Server
                 return Results.Ok();
             });
 
+            // удаление артефакта (и всех его версий) — только для админов
+            app.MapDelete("/{primitive}/{key}", async (HttpContext ctx, string primitive, string key, ArtifactService svc, CancellationToken ct) =>
+            {
+                var login = ctx.Request.Headers["x-user-login"].ToString();
+                if (string.IsNullOrWhiteSpace(login)) return Results.BadRequest(new { error = "LOGIN_REQUIRED" });
+
+                try
+                {
+                    await svc.DeleteArtifactAsync(Parse(primitive), key, login, ct);
+                    return Results.Ok();
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return Results.Unauthorized();
+                }
+            });
+
             static ArtifactType Parse(string primitive) => primitive.ToLower() switch
             {
                 "prompt" or "prompts" => ArtifactType.Prompt,

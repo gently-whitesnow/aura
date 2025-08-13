@@ -8,4 +8,5 @@ public interface IArtifactVersionRepository
     Task InsertAsync(ArtifactVersion version, CancellationToken ct); 
     Task UpdateAsync(ArtifactVersion version, CancellationToken ct);
     Task<List<ArtifactVersion>> HistoryAsync(ArtifactType type, string key, CancellationToken ct);
+    Task DeleteAllAsync(ArtifactType type, string key, CancellationToken ct);
 }

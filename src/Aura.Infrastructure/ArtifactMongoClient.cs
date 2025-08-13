@@ -75,4 +75,9 @@ public sealed class ArtifactMongoClient : IArtifactRepository
             .SortBy(a => a.Title)
             .ToListAsync(ct);
     }
+
+    public Task DeleteAsync(ArtifactType type, string key, CancellationToken ct)
+    {
+        return _artifacts.DeleteOneAsync(a => a.Type == type && a.Key == key, ct);
+    }
 }

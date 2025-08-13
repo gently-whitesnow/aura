@@ -33,4 +33,9 @@ public sealed class ArtifactVersionMongoClient(MongoStore store) : IArtifactVers
             .SortByDescending(v => v.CreatedAt)
             .ToListAsync(ct);
     }
+
+    public Task DeleteAllAsync(ArtifactType type, string key, CancellationToken ct)
+    {
+        return _versions.DeleteManyAsync(v => v.Type == type && v.ArtifactKey == key, ct);
+    }
 }

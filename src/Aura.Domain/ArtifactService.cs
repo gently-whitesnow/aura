@@ -80,4 +80,20 @@ public sealed class ArtifactService
 
     public Task<List<ArtifactVersion>> HistoryAsync(ArtifactType type, string rawKey, CancellationToken ct)
         => _versions.HistoryAsync(type, Validation.NormalizeKey(rawKey), ct);
+
+    public async Task DeleteArtifactAsync(ArtifactType type, string rawKey, string adminLogin, CancellationToken ct)
+    {
+        if (!await _admins.IsAdminAsync(adminLogin, ct))
+            throw new UnauthorizedAccessException("NOT_ADMIN");
+
+        var key = Validation.NormalizeKey(rawKey);
+
+        // ensure artifact exists
+        var art = await _artifacts.GetAsync(type, key, ct);
+        if (art is null)
+            return; // idempotent delete
+
+        await _versions.DeleteAllAsync(type, key, ct);
+        await _artifacts.DeleteAsync(type, key, ct);
+    }
 }
