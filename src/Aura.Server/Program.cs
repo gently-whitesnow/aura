@@ -24,6 +24,8 @@ else
 builder.Services.AddSingleton<IPromptRepository, PromptMongoClient>();
 builder.Services.AddSingleton<PromptsService>();
 builder.Services.AddSingleton<IResourceRepository, ResourceMongoClient>();
+builder.Services.AddSingleton<IResourceChangeNotifier, ResourceSubscriptionManager>();
+builder.Services.AddSingleton<IResourceSubscriptionManager, ResourceSubscriptionManager>();
 builder.Services.AddSingleton<ResourcesService>();
 
 // MCP SDK

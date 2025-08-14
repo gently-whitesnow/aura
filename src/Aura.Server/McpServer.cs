@@ -1,10 +1,8 @@
-using Aura.Domain;
-using Aura.Domain.Models;
+using System.Text.Json;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol;
 using Aura.Domain.Prompts;
 using Aura.Domain.Resources;
-using System.Text;
 
 namespace Aura.Server;
 
@@ -25,6 +23,15 @@ public static class McpServer
         {
             var svc = ctx.Services!.GetRequiredService<PromptsService>();
             var list = await svc.ListAsync(null, ct);
+            await ctx.Server.SendNotificationAsync(
+                NotificationMethods.LoggingMessageNotification,
+                new LoggingMessageNotificationParams
+                {
+                    Level = LoggingLevel.Debug,
+                    Logger = "Aura.MCP",
+                    Data = JsonSerializer.SerializeToElement($"Prompts listed: {list.Count}")
+                },
+                cancellationToken: ct);
             return new ListPromptsResult
             {
                 Prompts = list.Select(p => new Prompt
@@ -49,6 +56,15 @@ public static class McpServer
                     ?? throw new McpException("PROMPT_NOT_FOUND");
 
             var result = new GetPromptResult { Description = pr.Title };
+            await ctx.Server.SendNotificationAsync(
+                NotificationMethods.LoggingMessageNotification,
+                new LoggingMessageNotificationParams
+                {
+                    Level = LoggingLevel.Debug,
+                    Logger = "Aura.MCP",
+                    Data = JsonSerializer.SerializeToElement($"Prompt fetched: {ctx.Params!.Name}")
+                },
+                cancellationToken: ct);
 
             foreach (var m in pr.Messages)
             {
@@ -64,6 +80,15 @@ public static class McpServer
         {
             var svc = ctx.Services!.GetRequiredService<ResourcesService>();
             var list = await svc.ListAsync(null, ct);
+            await ctx.Server.SendNotificationAsync(
+                NotificationMethods.LoggingMessageNotification,
+                new LoggingMessageNotificationParams
+                {
+                    Level = LoggingLevel.Debug,
+                    Logger = "Aura.MCP",
+                    Data = JsonSerializer.SerializeToElement($"Resources listed: {list.Count}")
+                },
+                cancellationToken: ct);
             return new ListResourcesResult
             {
                 Resources = list.Select(r => new Resource
@@ -93,6 +118,15 @@ public static class McpServer
             var name = uri.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? uri[prefix.Length..] : uri;
             var data = await svc.GetActiveAsync(name, ct)
                     ?? throw new McpException("RESOURCE_NOT_FOUND");
+            await ctx.Server.SendNotificationAsync(
+                NotificationMethods.LoggingMessageNotification,
+                new LoggingMessageNotificationParams
+                {
+                    Level = LoggingLevel.Debug,
+                    Logger = "Aura.MCP",
+                    Data = JsonSerializer.SerializeToElement($"Resource read: {uri} => {name}")
+                },
+                cancellationToken: ct);
 
             // Return content from DB when available; fallback to URI
             var textContent = data.Text;
@@ -103,6 +137,39 @@ public static class McpServer
 
             // Fallback: return URI as text (client may resolve it)
             return new ReadResourceResult { Contents = { new TextResourceContents { Text = data.Uri } } };
-        });
+        })
+        .WithSubscribeToResourcesHandler((ctx, ct) =>
+        {
+            var mgr = ctx.Services!.GetRequiredService<IResourceSubscriptionManager>();
+            var uri = ctx.Params!.Uri!;
+            mgr.Subscribe(uri, ctx.Server);
+            _ = ctx.Server.SendNotificationAsync(
+                NotificationMethods.LoggingMessageNotification,
+                new LoggingMessageNotificationParams
+                {
+                    Level = LoggingLevel.Debug,
+                    Logger = "Aura.MCP",
+                    Data = JsonSerializer.SerializeToElement($"Subscribed: {ctx.Server.SessionId} -> {uri}")
+                },
+                cancellationToken: ct);
+            return ValueTask.FromResult(new EmptyResult());
+        })
+        .WithUnsubscribeFromResourcesHandler((ctx, ct) =>
+        {
+            var mgr = ctx.Services!.GetRequiredService<IResourceSubscriptionManager>();
+            var uri = ctx.Params!.Uri!;
+            mgr.Unsubscribe(uri, ctx.Server.SessionId);
+            _ = ctx.Server.SendNotificationAsync(
+                NotificationMethods.LoggingMessageNotification,
+                new LoggingMessageNotificationParams
+                {
+                    Level = LoggingLevel.Debug,
+                    Logger = "Aura.MCP",
+                    Data = JsonSerializer.SerializeToElement($"Unsubscribed: {ctx.Server.SessionId} -X- {uri}")
+                },
+                cancellationToken: ct);
+            return ValueTask.FromResult(new EmptyResult());
+        })
+        .WithSetLoggingLevelHandler((ctx, ct) => ValueTask.FromResult(new EmptyResult()));
     }
 }

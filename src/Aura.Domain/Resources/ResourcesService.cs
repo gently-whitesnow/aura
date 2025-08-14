@@ -8,11 +8,13 @@ public sealed class ResourcesService
 {
     private readonly IResourceRepository _resources;
     private readonly IAdminRepository _admins;
+    private readonly IResourceChangeNotifier _changeNotifier;
 
-    public ResourcesService(IResourceRepository resources, IAdminRepository admins)
+    public ResourcesService(IResourceRepository resources, IAdminRepository admins, IResourceChangeNotifier changeNotifier)
     {
         _resources = resources;
         _admins = admins;
+        _changeNotifier = changeNotifier;
     }
 
     public async Task<ResourceRecord> CreatePendingAsync(
@@ -60,7 +62,11 @@ public sealed class ResourcesService
         if (!await _admins.IsAdminAsync(adminLogin, ct))
             throw new UnauthorizedAccessException("NOT_ADMIN");
 
-        await _resources.ApproveAsync(Validation.NormalizeKey(name), version, adminLogin, DateTime.UtcNow, ct);
+        var normalized = Validation.NormalizeKey(name);
+        await _resources.ApproveAsync(normalized, version, adminLogin, DateTime.UtcNow, ct);
+
+        var uri = $"aura://resource/{normalized}";
+        await _changeNotifier.NotifyUpdatedAsync(uri, ct);
     }
 
     public Task<ResourceRecord?> GetActiveAsync(string name, CancellationToken ct)
@@ -83,7 +89,11 @@ public sealed class ResourcesService
         if (!await _admins.IsAdminAsync(adminLogin, ct))
             throw new UnauthorizedAccessException("NOT_ADMIN");
 
-        await _resources.DeleteAllAsync(Validation.NormalizeKey(name), ct);
+        var normalized = Validation.NormalizeKey(name);
+        await _resources.DeleteAllAsync(normalized, ct);
+
+        var uri = $"aura://resource/{normalized}";
+        await _changeNotifier.NotifyUpdatedAsync(uri, ct);
     }
 }
 
