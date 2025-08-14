@@ -1,3 +1,4 @@
+using System.Text;
 using Aura.Domain.Interfaces;
 using Aura.Domain.Models;
 using Aura.Domain.Resources.Models;
@@ -20,22 +21,24 @@ public sealed class ResourcesService
     public async Task<ResourceRecord> CreatePendingAsync(
         string name,
         string? title,
-        string uri,
+        string? uri,
         string? text,
         string? description,
         string? mimeType,
         AnnotationsRecord? annotations,
-        long? size,
         string createdBy,
         CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("name is required", nameof(name));
-        if (string.IsNullOrWhiteSpace(uri)) throw new ArgumentException("uri is required", nameof(uri));
 
         var normalized = Validation.NormalizeKey(name);
         var latest = await _resources.GetLatestAsync(normalized, ct);
         var version = Validation.NextPatch(latest?.Version);
         var now = DateTime.UtcNow;
+
+        long? size = null;
+        if (!string.IsNullOrEmpty(text))
+            size = Encoding.UTF8.GetByteCount(text);
 
         var record = new ResourceRecord
         {

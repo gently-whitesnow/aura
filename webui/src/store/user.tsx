@@ -5,7 +5,6 @@ import type { UserInfo } from '../types'
 type UserContextValue = {
   info: UserInfo | null
   loading: boolean
-  refresh: () => void
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined)
@@ -30,7 +29,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => load(), [])
 
-  const value = useMemo(() => ({ info, loading, refresh: () => load() }), [info, loading])
+  const value = useMemo(() => ({ info, loading }), [info, loading])
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>
 }
 

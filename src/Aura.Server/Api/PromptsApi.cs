@@ -38,17 +38,6 @@ namespace Aura.Server.Api
                 var v = await svc.CreatePendingAsync(name, payload.Title, payload.Messages ?? new List<PromptMessageRecord>(), payload.Arguments, login, ct);
                 return Results.Json(new { v.Version, v.Status });
             });
-
-            // Апрув версии промпта
-            app.MapPost("v1/prompts/{name}/versions/{version}/approve", async (HttpContext ctx, string name, string version, PromptsService svc, CancellationToken ct) =>
-            {
-                var login = HttpContextExtensions.GetLogin(ctx);
-                if (string.IsNullOrWhiteSpace(login)) return Results.BadRequest(new { error = "LOGIN_REQUIRED" });
-
-                if (!int.TryParse(version, out var ver)) return Results.BadRequest(new { error = "BAD_VERSION" });
-                await svc.ApproveAsync(name, ver, login, ct);
-                return Results.Ok();
-            });
         }
 
         public sealed record NewPromptVersionDto(string? Title, IList<PromptMessageRecord>? Messages, IList<PromptArgumentRecord>? Arguments);

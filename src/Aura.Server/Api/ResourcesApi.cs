@@ -33,42 +33,27 @@ namespace Aura.Server.Api
                 if (string.IsNullOrWhiteSpace(login)) return Results.BadRequest(new { error = "LOGIN_REQUIRED" });
 
                 var payload = await ctx.Request.ReadFromJsonAsync<NewResourceVersionDto>(cancellationToken: ct);
-                if (payload is null || string.IsNullOrWhiteSpace(payload.Uri)) return Results.BadRequest(new { error = "BAD_BODY" });
+                if (payload is null) return Results.BadRequest(new { error = "BAD_BODY" });
 
                 var v = await svc.CreatePendingAsync(
                     name,
                     payload.Title,
-                    payload.Uri!,
+                    null,
                     payload.Text,
                     payload.Description,
-                    payload.MimeType,
+                    null,
                     payload.Annotations,
-                    payload.Size,
                     login,
                     ct);
                 return Results.Json(new { v.Version, v.Status });
-            });
-
-            // Апрув версии ресурса
-            app.MapPost("v1/resources/{name}/versions/{version}/approve", async (HttpContext ctx, string name, string version, ResourcesService svc, CancellationToken ct) =>
-            {
-                var login = HttpContextExtensions.GetLogin(ctx);
-                if (string.IsNullOrWhiteSpace(login)) return Results.BadRequest(new { error = "LOGIN_REQUIRED" });
-
-                if (!int.TryParse(version, out var ver)) return Results.BadRequest(new { error = "BAD_VERSION" });
-                await svc.ApproveAsync(name, ver, login, ct);
-                return Results.Ok();
             });
         }
 
         public sealed record NewResourceVersionDto(
             string? Title,
-            string? Uri,
             string? Text,
             string? Description,
-            string? MimeType,
-            AnnotationsRecord? Annotations,
-            long? Size
+            AnnotationsRecord? Annotations
         );
     }
 }

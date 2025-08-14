@@ -5,6 +5,7 @@ import type { PromptRecord, ResourceRecord } from '../types'
 import { Boxes, SquarePen } from 'lucide-react'
 import CreatePromptModal from '../components/CreatePromptModal'
 import CreateResourceModal from '../components/CreateResourceModal'
+import { Search } from 'lucide-react'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -54,25 +55,25 @@ export default function HomePage() {
   const resourceItems = useMemo(() => resources ?? [], [resources])
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        <label className="input input-bordered flex items-center gap-2 max-w-2xl w-full">
-          <span className="opacity-60">Поиск</span>
+    <section className="container mx-auto px-4 lg:px-8 space-y-10 mt-10">
+      <div className="sticky top-4 z-10 flex justify-center">
+        <label className="input input-bordered rounded-full shadow-sm bg-base-100/95 backdrop-blur
+                    flex items-center gap-2 max-w-3xl w-full">
+          <Search className="w-4 h-4 opacity-60" aria-hidden />
           <input
-            aria-label="Поиск по названию или ключу"
             className="grow"
-            placeholder="Сразу по промптам и ресурсам…"
+            placeholder="Поиск по заголовкам"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </label>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-medium flex-1">Промпты</h2>
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => setShowCreatePrompt(true)}>Добавить</button>
+            <button type="button" className="btn btn-sm btn-outline btn-success" onClick={() => setShowCreatePrompt(true)}>Добавить</button>
           </div>
           {loadingPrompts && <div className="loading loading-dots" aria-live="polite" />}
           {errorPrompts && <div className="alert alert-error">{errorPrompts}</div>}
@@ -84,11 +85,12 @@ export default function HomePage() {
               <li key={`p-${a.name}`}>
                 <Link
                   to={`/prompts/${encodeURIComponent(a.name)}`}
-                  className="card bg-base-100 hover:shadow-md focus:shadow-md focus:outline-none"
+                  className="card border border-base-200 bg-base-100 transition-shadow duration-200
+             hover:shadow-md focus:shadow-md focus:outline-none"
                 >
                   <div className="card-body p-4">
                     <div className="flex items-center gap-2">
-                      <SquarePen className="w-5 h-5" aria-hidden />
+                      <SquarePen className="w-5 h-5 opacity-80" aria-hidden />
                       <h3 className="card-title text-base flex-1 truncate" title={a.title ?? ''}>
                         {a.title}
                       </h3>
@@ -98,7 +100,7 @@ export default function HomePage() {
                         </span>
                       )}
                     </div>
-                    <div className="text-xs opacity-70 truncate" title={a.name}>
+                    <div className="text-xs opacity-60 truncate" title={a.name}>
                       {a.name}
                     </div>
                   </div>
@@ -111,7 +113,7 @@ export default function HomePage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-medium flex-1">Ресурсы</h2>
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => setShowCreateResource(true)}>Добавить</button>
+            <button type="button" className="btn btn-sm btn-outline btn-success" onClick={() => setShowCreateResource(true)}>Добавить</button>
           </div>
           {loadingResources && <div className="loading loading-dots" aria-live="polite" />}
           {errorResources && <div className="alert alert-error">{errorResources}</div>}
@@ -123,11 +125,12 @@ export default function HomePage() {
               <li key={`r-${a.name}`}>
                 <Link
                   to={`/resources/${encodeURIComponent(a.name)}`}
-                  className="card bg-base-100 hover:shadow-md focus:shadow-md focus:outline-none"
+                  className="card border border-base-200 bg-base-100 transition-shadow duration-200
+             hover:shadow-md focus:shadow-md focus:outline-none"
                 >
                   <div className="card-body p-4">
                     <div className="flex items-center gap-2">
-                      <Boxes className="w-5 h-5" aria-hidden />
+                      <Boxes className="w-5 h-5 opacity-80" aria-hidden />
                       <h3 className="card-title text-base flex-1 truncate" title={a.title ?? ''}>
                         {a.title}
                       </h3>
@@ -137,7 +140,7 @@ export default function HomePage() {
                         </span>
                       )}
                     </div>
-                    <div className="text-xs opacity-70 truncate" title={a.name}>
+                    <div className="text-xs opacity-60 truncate" title={a.name}>
                       {a.name}
                     </div>
                   </div>
@@ -150,8 +153,8 @@ export default function HomePage() {
       {showCreatePrompt && (
         <CreatePromptModal
           onClose={() => setShowCreatePrompt(false)}
-          onSubmit={async (key, title, body) => {
-            const res = await api.createPromptVersion(key, { title, messages: [{ role: 'user', text: body }], arguments: [] })
+          onSubmit={async (key, payload) => {
+            const res = await api.createPromptVersion(key, payload)
             if (!res || typeof res.version !== 'number') throw new Error('CREATE_FAILED')
             setShowCreatePrompt(false)
             navigate(`/prompts/${encodeURIComponent(key)}`)
@@ -170,6 +173,7 @@ export default function HomePage() {
           }}
         />
       )}
+      
     </section>
   )
 }

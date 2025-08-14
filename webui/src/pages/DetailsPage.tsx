@@ -113,8 +113,8 @@ export default function DetailsPage() {
       <nav className="text-sm breadcrumbs">
         <ul>
           <li>
-            <Link to={routeType === 'Prompt' ? '/prompts' : '/resources'}>
-              {routeType === 'Prompt' ? 'Промпты' : 'Ресурсы'}
+            <Link to={'/'}>
+              Главная
             </Link>
           </li>
           <li className="truncate">{key}</li>

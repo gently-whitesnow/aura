@@ -9,9 +9,13 @@ public sealed class ResourceRecord
     public VersionStatus Status { get; set; } = VersionStatus.Pending;
 
     public string? Title { get; set; }
-    public string Uri { get; set; } = default!;
+
+    // Пока никуда не отправляем агента, так как нет авторизации
+    public string? Uri { get; set; }
     public string? Text { get; set; }
     public string? Description { get; set; }
+
+    // Для начала поддерживаем только текст
     public string? MimeType { get; set; }
     public AnnotationsRecord? Annotations { get; set; }
     public long? Size { get; set; }

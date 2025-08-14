@@ -96,7 +96,7 @@ public static class McpServer
                     Name = r.Name,
                     Title = r.Title,
                     Uri = $"aura://resource/{r.Name}",
-                    MimeType = r.MimeType,
+                    MimeType = r.MimeType ?? "text/plain",
                     Description = r.Description,
                     Annotations = r.Annotations is null ? null : new Annotations
                     {
@@ -136,7 +136,7 @@ public static class McpServer
             }
 
             // Fallback: return URI as text (client may resolve it)
-            return new ReadResourceResult { Contents = { new TextResourceContents { Text = data.Uri } } };
+            return new ReadResourceResult { Contents = { new TextResourceContents { Text = data.Uri ?? "not supported" } } };
         })
         .WithSubscribeToResourcesHandler((ctx, ct) =>
         {

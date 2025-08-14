@@ -15,7 +15,7 @@ public sealed class ResourceRecordDbModel
     public VersionStatus Status { get; set; } = VersionStatus.Pending;
 
     public string? Title { get; set; }
-    public string Uri { get; set; } = default!;
+    public string? Uri { get; set; }
     public string? Text { get; set; }
     public string? Description { get; set; }
     public string? MimeType { get; set; }
