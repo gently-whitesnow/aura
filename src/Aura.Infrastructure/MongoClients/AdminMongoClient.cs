@@ -2,6 +2,7 @@ using Aura.Domain.Interfaces;
 using Aura.Domain.Models;
 using Aura.Infrastructure.Mappers;
 using Aura.Infrastructure.Models;
+using Aura.Infrastructure.MongoClients;
 using MongoDB.Driver;
 
 namespace Aura.Infrastructure;

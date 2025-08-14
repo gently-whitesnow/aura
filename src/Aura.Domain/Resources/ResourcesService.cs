@@ -1,0 +1,90 @@
+using Aura.Domain.Interfaces;
+using Aura.Domain.Models;
+using Aura.Domain.Resources.Models;
+
+namespace Aura.Domain.Resources;
+
+public sealed class ResourcesService
+{
+    private readonly IResourceRepository _resources;
+    private readonly IAdminRepository _admins;
+
+    public ResourcesService(IResourceRepository resources, IAdminRepository admins)
+    {
+        _resources = resources;
+        _admins = admins;
+    }
+
+    public async Task<ResourceRecord> CreatePendingAsync(
+        string name,
+        string? title,
+        string uri,
+        string? text,
+        string? description,
+        string? mimeType,
+        AnnotationsRecord? annotations,
+        long? size,
+        string createdBy,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("name is required", nameof(name));
+        if (string.IsNullOrWhiteSpace(uri)) throw new ArgumentException("uri is required", nameof(uri));
+
+        var normalized = Validation.NormalizeKey(name);
+        var latest = await _resources.GetLatestAsync(normalized, ct);
+        var version = Validation.NextPatch(latest?.Version);
+        var now = DateTime.UtcNow;
+
+        var record = new ResourceRecord
+        {
+            Name = normalized,
+            Version = version,
+            Status = VersionStatus.Pending,
+            Title = title,
+            Uri = uri,
+            Text = text,
+            Description = description,
+            MimeType = mimeType,
+            Annotations = annotations,
+            Size = size,
+            CreatedAt = now,
+            CreatedBy = createdBy
+        };
+
+        await _resources.InsertAsync(record, ct);
+        return record;
+    }
+
+    public async Task ApproveAsync(string name, int version, string adminLogin, CancellationToken ct)
+    {
+        if (!await _admins.IsAdminAsync(adminLogin, ct))
+            throw new UnauthorizedAccessException("NOT_ADMIN");
+
+        await _resources.ApproveAsync(Validation.NormalizeKey(name), version, adminLogin, DateTime.UtcNow, ct);
+    }
+
+    public Task<ResourceRecord?> GetActiveAsync(string name, CancellationToken ct)
+    {
+        return _resources.GetLatestApprovedAsync(Validation.NormalizeKey(name), ct);
+    }
+
+    public Task<List<ResourceRecord>> HistoryAsync(string name, CancellationToken ct)
+    {
+        return _resources.HistoryAsync(Validation.NormalizeKey(name), ct);
+    }
+
+    public Task<List<ResourceRecord>> ListAsync(string? query, CancellationToken ct)
+    {
+        return _resources.ListLatestApprovedAsync(query, ct);
+    }
+
+    public async Task DeleteAsync(string name, string adminLogin, CancellationToken ct)
+    {
+        if (!await _admins.IsAdminAsync(adminLogin, ct))
+            throw new UnauthorizedAccessException("NOT_ADMIN");
+
+        await _resources.DeleteAllAsync(Validation.NormalizeKey(name), ct);
+    }
+}
+
+
