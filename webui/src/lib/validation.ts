@@ -1,4 +1,4 @@
-const keyRegex = /^[a-z0-9][a-z0-9\-\/.]{2,200}$/
+const keyRegex = /^[a-z0-9][a-z0-9\-/.]{2,200}$/
 
 export function normalizeKey(raw: string): string {
   return raw.trim().toLowerCase()

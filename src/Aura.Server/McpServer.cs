@@ -22,7 +22,7 @@ public static class McpServer
         .WithListPromptsHandler(async (ctx, ct) =>
         {
             var svc = ctx.Services!.GetRequiredService<PromptsService>();
-            var list = await svc.ListAsync(null, ct);
+            var list = await svc.ListLatestApprovedAsync(null, ct);
             await ctx.Server.SendNotificationAsync(
                 NotificationMethods.LoggingMessageNotification,
                 new LoggingMessageNotificationParams
@@ -52,7 +52,7 @@ public static class McpServer
         .WithGetPromptHandler(async (ctx, ct) =>
         {
             var svc = ctx.Services!.GetRequiredService<PromptsService>();
-            var pr = await svc.GetActiveAsync(ctx.Params!.Name, ct)
+            var pr = await svc.GetLatestApprovedAsync(ctx.Params!.Name, ct)
                     ?? throw new McpException("PROMPT_NOT_FOUND");
 
             var result = new GetPromptResult { Description = pr.Title };
@@ -79,7 +79,7 @@ public static class McpServer
         .WithListResourcesHandler(async (ctx, ct) =>
         {
             var svc = ctx.Services!.GetRequiredService<ResourcesService>();
-            var list = await svc.ListAsync(null, ct);
+            var list = await svc.ListLatestApprovedAsync(null, ct);
             await ctx.Server.SendNotificationAsync(
                 NotificationMethods.LoggingMessageNotification,
                 new LoggingMessageNotificationParams
@@ -116,7 +116,7 @@ public static class McpServer
             var uri = ctx.Params!.Uri;
             var prefix = "aura://resource/";
             var name = uri.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? uri[prefix.Length..] : uri;
-            var data = await svc.GetActiveAsync(name, ct)
+            var data = await svc.GetLatestApprovedAsync(name, ct)
                     ?? throw new McpException("RESOURCE_NOT_FOUND");
             await ctx.Server.SendNotificationAsync(
                 NotificationMethods.LoggingMessageNotification,

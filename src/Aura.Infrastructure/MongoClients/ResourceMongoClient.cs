@@ -18,19 +18,78 @@ public sealed class ResourceMongoClient : IResourceRepository
         _resources = store.Resources;
     }
 
-    public async Task<ResourceRecord?> GetLatestApprovedAsync(string name, CancellationToken ct)
+    public async Task<ResourceRecord?> GetActualAsync(string name, CancellationToken ct)
     {
-        var db = await _resources
-            .Find(p => p.Name == name && p.Status == Aura.Domain.Models.VersionStatus.Approved)
+        var filterByName = Builders<ResourceRecordDbModel>.Filter.Eq(p => p.Name, name);
+
+        // 1) Самая свежая approved-версия
+        var approved = await _resources
+            .Find(filterByName & Builders<ResourceRecordDbModel>.Filter.Eq(p => p.Status, Domain.Models.VersionStatus.Approved))
             .SortByDescending(p => p.Version)
+            .Limit(1)
             .FirstOrDefaultAsync(ct);
-        return db?.ToDomain();
+
+        if (approved != null) return approved.ToDomain();
+
+        // 2) Иначе просто самая свежая версия
+        var latest = await _resources
+            .Find(filterByName)
+            .SortByDescending(p => p.Version)
+            .Limit(1)
+            .FirstOrDefaultAsync(ct);
+
+        return latest?.ToDomain();
+    }
+
+    public async Task<List<ResourceRecord>> ListActualAsync(string? query, CancellationToken ct)
+    {
+        var filter = Builders<ResourceRecordDbModel>.Filter.Empty;
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var rx = new BsonRegularExpression(new Regex(Regex.Escape(query), RegexOptions.IgnoreCase));
+            filter &= Builders<ResourceRecordDbModel>.Filter.Regex(p => p.Title, rx);
+        }
+
+        var all = await _resources
+            .Find(filter)
+            .SortBy(p => p.Name).ThenByDescending(p => p.Version)
+            .ToListAsync(ct);
+
+        var result = new List<ResourceRecord>();
+        ResourceRecordDbModel? relevant = null;
+        foreach (var db in all)
+        {
+            if (relevant != null && relevant.Name != db.Name)
+            {
+                result.Add(relevant.ToDomain());
+                relevant = db;
+            }
+
+            if (relevant == null || relevant.Status != Domain.Models.VersionStatus.Approved && db.Status == Domain.Models.VersionStatus.Approved)
+            {
+                relevant = db;
+            }
+        }
+
+        if (relevant != null)
+            result.Add(relevant.ToDomain());
+        
+        return result;
     }
 
     public async Task<ResourceRecord?> GetLatestAsync(string name, CancellationToken ct)
     {
         var db = await _resources
             .Find(p => p.Name == name)
+            .SortByDescending(p => p.Version)
+            .FirstOrDefaultAsync(ct);
+        return db?.ToDomain();
+    }
+
+    public async Task<ResourceRecord?> GetLatestApprovedAsync(string name, CancellationToken ct)
+    {
+        var db = await _resources
+            .Find(p => p.Name == name && p.Status == Domain.Models.VersionStatus.Approved)
             .SortByDescending(p => p.Version)
             .FirstOrDefaultAsync(ct);
         return db?.ToDomain();

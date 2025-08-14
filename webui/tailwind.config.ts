@@ -8,7 +8,10 @@ export default {
   theme: {
     extend: {},
   },
-  plugins: [require('daisyui')],
+  plugins: [
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('daisyui')
+  ],
   daisyui: {
     themes: ['light'],
   },

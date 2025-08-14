@@ -7,20 +7,27 @@ namespace Aura.Server.Api
     {
         public static void MapPromptsApi(this WebApplication app)
         {
-            // Получение активного промпта
-            app.MapGet("v2/prompts/{name}", async (string name, PromptsService svc, CancellationToken ct) =>
+            // Получение актуального промпта (Последний апрув, иначе последняя версия)
+            app.MapGet("v1/prompts/{name}", async (string name, PromptsService svc, CancellationToken ct) =>
             {
-                var data = await svc.GetActiveAsync(name, ct);
+                var data = await svc.GetActualAsync(name, ct);
                 if (data is null) return Results.NotFound();
                 return Results.Json(data);
             });
 
+            // Получение всех актуальных промптов (Последние апрувы или последние версии)
+            app.MapGet("v1/prompts", async (string? query, PromptsService svc, CancellationToken ct) =>
+            {
+                var data = await svc.ListActualAsync(query, ct);
+                return Results.Json(data);
+            });
+
             // Получение истории версий промпта
-            app.MapGet("v2/prompts/{name}/versions", async (string name, PromptsService svc, CancellationToken ct)
+            app.MapGet("v1/prompts/{name}/versions", async (string name, PromptsService svc, CancellationToken ct)
                 => Results.Json(await svc.HistoryAsync(name, ct)));
 
             // Создание новой версии промпта
-            app.MapPost("v2/prompts/{name}/versions", async (HttpContext ctx, string name, PromptsService svc, CancellationToken ct) =>
+            app.MapPost("v1/prompts/{name}/versions", async (HttpContext ctx, string name, PromptsService svc, CancellationToken ct) =>
             {
                 var login = HttpContextExtensions.GetLogin(ctx);
                 if (string.IsNullOrWhiteSpace(login)) return Results.BadRequest(new { error = "LOGIN_REQUIRED" });
@@ -33,7 +40,7 @@ namespace Aura.Server.Api
             });
 
             // Апрув версии промпта
-            app.MapPost("v2/prompts/{name}/versions/{version}/approve", async (HttpContext ctx, string name, string version, PromptsService svc, CancellationToken ct) =>
+            app.MapPost("v1/prompts/{name}/versions/{version}/approve", async (HttpContext ctx, string name, string version, PromptsService svc, CancellationToken ct) =>
             {
                 var login = HttpContextExtensions.GetLogin(ctx);
                 if (string.IsNullOrWhiteSpace(login)) return Results.BadRequest(new { error = "LOGIN_REQUIRED" });

@@ -1,9 +1,15 @@
-import type { Artifact, ArtifactType, ArtifactVersion, NewVersionDto, UserInfo } from '../types'
+import type {
+  ArtifactType,
+  UserInfo,
+  PromptRecord,
+  ResourceRecord,
+  NewPromptVersionDto,
+  NewResourceVersionDto,
+} from '../types'
 
 const API_BASE = import.meta.env.VITE_API_BASE as string | undefined
 // Не шумим в dev: при пустом BASE используем прокси Vite
 if (!API_BASE && import.meta.env.PROD) {
-  // eslint-disable-next-line no-console
   console.warn('VITE_API_BASE не задан. В production это может привести к ошибкам API.')
 }
 
@@ -15,7 +21,8 @@ function primitivePath(type: ArtifactType): PrimitivePath {
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const base = API_BASE ?? ''
-  const res = await fetch(`${base}${path}`, {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const res = await fetch(`${base}${normalizedPath}`, {
     ...init,
     headers: { 'content-type': 'application/json', ...(init?.headers as Record<string, string>) },
   })
@@ -35,20 +42,25 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   user: () => http<UserInfo>('v1/user'),
 
-  list: (type: ArtifactType, q?: string) =>
-    http<Artifact[]>(`v1/${primitivePath(type)}${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  listPrompts: (q?: string) => http<PromptRecord[]>(`v1/prompts${q ? `?query=${encodeURIComponent(q)}` : ''}`),
+  listResources: (q?: string) => http<ResourceRecord[]>(`v1/resources${q ? `?query=${encodeURIComponent(q)}` : ''}`),
 
-  active: (type: ArtifactType, key: string) =>
-    http<ArtifactVersion | null>(`v1/${primitivePath(type)}/${encodeURIComponent(key)}`),
+  promptActive: (key: string) => http<PromptRecord | null>(`v1/prompts/${encodeURIComponent(key)}`),
+  resourceActive: (key: string) => http<ResourceRecord | null>(`v1/resources/${encodeURIComponent(key)}`),
 
-  history: (type: ArtifactType, key: string) =>
-    http<ArtifactVersion[]>(`v1/${primitivePath(type)}/${encodeURIComponent(key)}/versions`),
+  promptHistory: (key: string) => http<PromptRecord[]>(`v1/prompts/${encodeURIComponent(key)}/versions`),
+  resourceHistory: (key: string) => http<ResourceRecord[]>(`v1/resources/${encodeURIComponent(key)}/versions`),
 
-  createVersion: (type: ArtifactType, key: string, payload: NewVersionDto) =>
-    http<{ version: number; status: string }>(
-      `v1/${primitivePath(type)}/${encodeURIComponent(key)}/versions`,
-      { method: 'POST', body: JSON.stringify(payload) },
-    ),
+  createPromptVersion: (key: string, payload: NewPromptVersionDto) =>
+    http<{ version: number; status: string }>(`v1/prompts/${encodeURIComponent(key)}/versions`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  createResourceVersion: (key: string, payload: NewResourceVersionDto) =>
+    http<{ version: number; status: string }>(`v1/resources/${encodeURIComponent(key)}/versions`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 
   approve: (type: ArtifactType, key: string, version: number) =>
     http<void>(
@@ -64,15 +76,6 @@ export function parseTypeFromPath(segment: string): ArtifactType {
   throw new Error('BAD_TYPE')
 }
 
-export function extractPlaceholdersFromTemplate(template: string): string[] {
-  const regex = /{{\s*([A-Za-z0-9_]+)\s*}}/g
-  const found = new Set<string>()
-  let match: RegExpExecArray | null
-  // eslint-disable-next-line no-cond-assign
-  while ((match = regex.exec(template))) {
-    found.add(match[1])
-  }
-  return Array.from(found.values())
-}
+// no-op helpers kept for compatibility if needed later
 
 

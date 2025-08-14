@@ -4,8 +4,10 @@ namespace Aura.Domain.Interfaces;
 
 public interface IPromptRepository
 {
-    Task<PromptRecord?> GetLatestApprovedAsync(string name, CancellationToken ct);
+    Task<PromptRecord?> GetActualAsync(string name, CancellationToken ct);
+    Task<List<PromptRecord>> ListActualAsync(string? query, CancellationToken ct);
     Task<PromptRecord?> GetLatestAsync(string name, CancellationToken ct);
+    Task<PromptRecord?> GetLatestApprovedAsync(string name, CancellationToken ct);
     Task<PromptRecord?> GetAsync(string name, int version, CancellationToken ct);
     Task<List<PromptRecord>> HistoryAsync(string name, CancellationToken ct);
     Task<List<PromptRecord>> ListLatestApprovedAsync(string? query, CancellationToken ct);

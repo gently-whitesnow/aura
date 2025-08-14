@@ -7,20 +7,27 @@ namespace Aura.Server.Api
     {
         public static void MapResourcesApi(this WebApplication app)
         {
-            // Получение активного ресурса
-            app.MapGet("v2/resources/{name}", async (string name, ResourcesService svc, CancellationToken ct) =>
+            // Получение актуального ресурса (Последний апрув, иначе последняя версия)
+            app.MapGet("v1/resources/{name}", async (string name, ResourcesService svc, CancellationToken ct) =>
             {
-                var data = await svc.GetActiveAsync(name, ct);
+                var data = await svc.GetActualAsync(name, ct);
                 if (data is null) return Results.NotFound();
                 return Results.Json(data);
             });
 
+            // Получение всех актуальных ресурсов
+            app.MapGet("v1/resources", async (string? query, ResourcesService svc, CancellationToken ct) =>
+            {
+                var data = await svc.ListActualAsync(query, ct);
+                return Results.Json(data);
+            });
+
             // Получение истории версий ресурса
-            app.MapGet("v2/resources/{name}/versions", async (string name, ResourcesService svc, CancellationToken ct)
+            app.MapGet("v1/resources/{name}/versions", async (string name, ResourcesService svc, CancellationToken ct)
                 => Results.Json(await svc.HistoryAsync(name, ct)));
 
             // Создание новой версии ресурса
-            app.MapPost("v2/resources/{name}/versions", async (HttpContext ctx, string name, ResourcesService svc, CancellationToken ct) =>
+            app.MapPost("v1/resources/{name}/versions", async (HttpContext ctx, string name, ResourcesService svc, CancellationToken ct) =>
             {
                 var login = HttpContextExtensions.GetLogin(ctx);
                 if (string.IsNullOrWhiteSpace(login)) return Results.BadRequest(new { error = "LOGIN_REQUIRED" });
@@ -43,7 +50,7 @@ namespace Aura.Server.Api
             });
 
             // Апрув версии ресурса
-            app.MapPost("v2/resources/{name}/versions/{version}/approve", async (HttpContext ctx, string name, string version, ResourcesService svc, CancellationToken ct) =>
+            app.MapPost("v1/resources/{name}/versions/{version}/approve", async (HttpContext ctx, string name, string version, ResourcesService svc, CancellationToken ct) =>
             {
                 var login = HttpContextExtensions.GetLogin(ctx);
                 if (string.IsNullOrWhiteSpace(login)) return Results.BadRequest(new { error = "LOGIN_REQUIRED" });

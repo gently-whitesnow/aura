@@ -55,9 +55,14 @@ public sealed class PromptsService
         await _prompts.ApproveAsync(Validation.NormalizeKey(name), version, adminLogin, DateTime.UtcNow, ct);
     }
 
-    public Task<PromptRecord?> GetActiveAsync(string name, CancellationToken ct)
+    public Task<PromptRecord?> GetActualAsync(string name, CancellationToken ct)
     {
-        return _prompts.GetLatestApprovedAsync(Validation.NormalizeKey(name), ct);
+        return _prompts.GetActualAsync(Validation.NormalizeKey(name), ct);
+    }
+
+    public Task<List<PromptRecord>> ListActualAsync(string? query, CancellationToken ct)
+    {
+        return _prompts.ListActualAsync(query, ct);
     }
 
     public Task<List<PromptRecord>> HistoryAsync(string name, CancellationToken ct)
@@ -65,7 +70,12 @@ public sealed class PromptsService
         return _prompts.HistoryAsync(Validation.NormalizeKey(name), ct);
     }
 
-    public Task<List<PromptRecord>> ListAsync(string? query, CancellationToken ct)
+    public Task<PromptRecord?> GetLatestApprovedAsync(string name, CancellationToken ct)
+    {
+        return _prompts.GetLatestApprovedAsync(Validation.NormalizeKey(name), ct);
+    }
+
+    public Task<List<PromptRecord>> ListLatestApprovedAsync(string? query, CancellationToken ct)
     {
         return _prompts.ListLatestApprovedAsync(query, ct);
     }

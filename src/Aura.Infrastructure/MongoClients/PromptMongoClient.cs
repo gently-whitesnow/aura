@@ -18,13 +18,63 @@ public sealed class PromptMongoClient : IPromptRepository
         _prompts = store.Prompts;
     }
 
-    public async Task<PromptRecord?> GetLatestApprovedAsync(string name, CancellationToken ct)
+    public async Task<PromptRecord?> GetActualAsync(string name, CancellationToken ct)
     {
-        var db = await _prompts
-            .Find(p => p.Name == name && p.Status == Aura.Domain.Models.VersionStatus.Approved)
+        var filterByName = Builders<PromptRecordDbModel>.Filter.Eq(p => p.Name, name);
+
+        // 1) Самая свежая approved-версия
+        var approved = await _prompts
+            .Find(filterByName & Builders<PromptRecordDbModel>.Filter.Eq(p => p.Status, Domain.Models.VersionStatus.Approved))
             .SortByDescending(p => p.Version)
+            .Limit(1)
             .FirstOrDefaultAsync(ct);
-        return db?.ToDomain();
+
+        if (approved != null) return approved.ToDomain();
+
+        // 2) Иначе просто самая свежая версия
+        var latest = await _prompts
+            .Find(filterByName)
+            .SortByDescending(p => p.Version)
+            .Limit(1)
+            .FirstOrDefaultAsync(ct);
+
+        return latest?.ToDomain();
+    }
+
+    public async Task<List<PromptRecord>> ListActualAsync(string? query, CancellationToken ct)
+    {
+        var filter = Builders<PromptRecordDbModel>.Filter.Empty;
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var rx = new BsonRegularExpression(new Regex(Regex.Escape(query), RegexOptions.IgnoreCase));
+            filter &= Builders<PromptRecordDbModel>.Filter.Regex(p => p.Title, rx);
+        }
+
+        var all = await _prompts
+            .Find(filter)
+            .SortBy(p => p.Name).ThenByDescending(p => p.Version)
+            .ToListAsync(ct);
+
+        var result = new List<PromptRecord>();
+        PromptRecordDbModel? relevant = null;
+        foreach (var db in all)
+        {
+            if (relevant != null && relevant.Name != db.Name)
+            {
+                result.Add(relevant.ToDomain());
+                relevant = db;
+            }
+
+            if (relevant == null || relevant.Status != Domain.Models.VersionStatus.Approved && db.Status == Domain.Models.VersionStatus.Approved)
+            {
+                relevant = db;
+            }
+        }
+
+        if (relevant != null)
+            result.Add(relevant.ToDomain());
+        
+        return result;
     }
 
     public async Task<PromptRecord?> GetLatestAsync(string name, CancellationToken ct)
@@ -51,6 +101,15 @@ public sealed class PromptMongoClient : IPromptRepository
             .SortByDescending(p => p.CreatedAt)
             .ToListAsync(ct);
         return list.ConvertAll(p => p.ToDomain());
+    }
+
+    public async Task<PromptRecord?> GetLatestApprovedAsync(string name, CancellationToken ct)
+    {
+        var db = await _prompts
+            .Find(p => p.Name == name && p.Status == Domain.Models.VersionStatus.Approved)
+            .SortByDescending(p => p.Version)
+            .FirstOrDefaultAsync(ct);
+        return db?.ToDomain();
     }
 
     public async Task<List<PromptRecord>> ListLatestApprovedAsync(string? query, CancellationToken ct)

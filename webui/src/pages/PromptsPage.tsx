@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
-import type { Artifact } from '../types'
+import type { PromptRecord } from '../types'
 import { Link, useNavigate } from 'react-router-dom'
 import { SquarePen, Plus } from 'lucide-react'
 import { useUser } from '../store/user'
-import CreateArtifactModal from '../components/CreateArtifactModal'
+import CreatePromptModal from '../components/CreatePromptModal'
 
 export default function PromptsPage() {
   const navigate = useNavigate()
   useUser() // keep subscribed for future admin-only features
   const [q, setQ] = useState('')
   const [loading, setLoading] = useState(false)
-  const [list, setList] = useState<Artifact[] | null>(null)
+  const [list, setList] = useState<PromptRecord[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
 
@@ -20,7 +20,7 @@ export default function PromptsPage() {
     setLoading(true)
     setError(null)
     api
-      .list('Prompt', q || undefined)
+      .listPrompts(q || undefined)
       .then((res) => !cancelled && setList(res))
       .catch(() => !cancelled && setError('Ошибка загрузки списка'))
       .finally(() => !cancelled && setLoading(false))
@@ -58,22 +58,22 @@ export default function PromptsPage() {
 
       <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {items.map((a) => (
-          <li key={a.key}>
+          <li key={a.name}>
             <Link
-              to={`/prompts/${encodeURIComponent(a.key)}`}
+               to={`/prompts/${encodeURIComponent(a.name)}`}
               className="card bg-base-100 hover:shadow-md focus:shadow-md focus:outline-none"
             >
               <div className="card-body p-4">
                 <div className="flex items-center gap-2">
                   <SquarePen className="w-5 h-5" aria-hidden />
-                  <h3 className="card-title text-base flex-1 truncate" title={a.title}>{a.title}</h3>
-                  {a.activeVersion != null && (
-                    <span className="badge badge-sm" aria-label={`Активная версия ${a.activeVersion}`}>
-                      v{a.activeVersion}
+                  <h3 className="card-title text-base flex-1 truncate" title={a.title ?? ''}>{a.title}</h3>
+                  {a.version != null && (
+                    <span className="badge badge-sm" aria-label={`Активная версия ${a.version}`}>
+                      v{a.version}
                     </span>
                   )}
                 </div>
-                <div className="text-xs opacity-70 truncate" title={a.key}>{a.key}</div>
+                <div className="text-xs opacity-70 truncate" title={a.name}>{a.name}</div>
               </div>
             </Link>
           </li>
@@ -81,11 +81,14 @@ export default function PromptsPage() {
       </ul>
 
       {showCreate && (
-        <CreateArtifactModal
-          type="Prompt"
+        <CreatePromptModal
           onClose={() => setShowCreate(false)}
-          onSubmit={async (key, payload) => {
-            await api.createVersion('Prompt', key, payload)
+          onSubmit={async (key, title, body) => {
+            await api.createPromptVersion(key, {
+              title,
+              messages: [{ role: 'user', text: body }],
+              arguments: [],
+            })
             navigate(`/prompts/${encodeURIComponent(key)}`)
           }}
         />

@@ -69,7 +69,17 @@ public sealed class ResourcesService
         await _changeNotifier.NotifyUpdatedAsync(uri, ct);
     }
 
-    public Task<ResourceRecord?> GetActiveAsync(string name, CancellationToken ct)
+    public Task<ResourceRecord?> GetActualAsync(string name, CancellationToken ct)
+    {
+        return _resources.GetActualAsync(Validation.NormalizeKey(name), ct);
+    }
+
+    public Task<List<ResourceRecord>> ListActualAsync(string? query, CancellationToken ct)
+    {
+        return _resources.ListActualAsync(query, ct);
+    }
+
+    public Task<ResourceRecord?> GetLatestApprovedAsync(string name, CancellationToken ct)
     {
         return _resources.GetLatestApprovedAsync(Validation.NormalizeKey(name), ct);
     }
@@ -79,7 +89,7 @@ public sealed class ResourcesService
         return _resources.HistoryAsync(Validation.NormalizeKey(name), ct);
     }
 
-    public Task<List<ResourceRecord>> ListAsync(string? query, CancellationToken ct)
+    public Task<List<ResourceRecord>> ListLatestApprovedAsync(string? query, CancellationToken ct)
     {
         return _resources.ListLatestApprovedAsync(query, ct);
     }
