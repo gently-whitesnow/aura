@@ -1,17 +1,11 @@
 import { useMemo, useState, useCallback } from 'react'
 import type { NewResourceVersionDto } from '../types'
-
+import { KEY_HINT } from '../lib/constants'
+import { normalizeKey, isValidKey } from '../lib/validation'
 
 type Props = {
   onSubmit: (key: string, payload: NewResourceVersionDto) => Promise<void>
   onClose: () => void
-}
-
-const KEY_HINT = 'латиница, цифры, ".", "-", "_", "/", ≥ 3 символов'
-const keyRegex = /^[a-z0-9._/\-]{3,}$/
-
-function normalizeKey(s: string) {
-  return s.trim().toLowerCase().replace(/\s+/g, '-').replace(/\/{2,}/g, '/')
 }
 
 export default function CreateResourceModal({ onSubmit, onClose }: Props) {
@@ -36,7 +30,7 @@ export default function CreateResourceModal({ onSubmit, onClose }: Props) {
   }, [annotationsRaw])
 
   const normalizedKey = useMemo(() => normalizeKey(key), [key])
-  const keyValid = keyRegex.test(normalizedKey)
+  const keyValid = isValidKey(normalizedKey)
 
 
   const valid = keyValid && parsedAnnotations.ok

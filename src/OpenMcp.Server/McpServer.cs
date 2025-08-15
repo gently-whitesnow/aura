@@ -22,7 +22,8 @@ public static class McpServer
         .WithListPromptsHandler(async (ctx, ct) =>
         {
             var svc = ctx.Services!.GetRequiredService<PromptsService>();
-            var list = await svc.ListLatestApprovedAsync(null, ct);
+            var list = await svc.ListActualAsync(null, ct);
+            // var list = await svc.ListLatestApprovedAsync(null, ct);
             await ctx.Server.SendNotificationAsync(
                 NotificationMethods.LoggingMessageNotification,
                 new LoggingMessageNotificationParams
@@ -38,12 +39,14 @@ public static class McpServer
                 {
                     Name = p.Name,
                     Title = p.Title,
-                    Description = p.Title,
+                    // TODO?
+                    // Description = p.Title,
                     Arguments = p.Arguments?.Select(a => new PromptArgument
                     {
                         Name = a.Name,
                         Title = a.Title,
-                        Description = a.Description,
+                        // TODO?
+                        // Description = a.Description,
                         Required = a.Required
                     }).ToList()
                 }).ToList()
@@ -52,10 +55,15 @@ public static class McpServer
         .WithGetPromptHandler(async (ctx, ct) =>
         {
             var svc = ctx.Services!.GetRequiredService<PromptsService>();
-            var pr = await svc.GetLatestApprovedAsync(ctx.Params!.Name, ct)
+            // var pr = await svc.GetLatestApprovedAsync(ctx.Params!.Name, ct)
+            var pr = await svc.GetActualAsync(ctx.Params!.Name, ct)
                     ?? throw new McpException("PROMPT_NOT_FOUND");
 
-            var result = new GetPromptResult { Description = pr.Title };
+            var result = new GetPromptResult
+            {
+                // TODO?
+                // Description = pr.Title 
+            };
             await ctx.Server.SendNotificationAsync(
                 NotificationMethods.LoggingMessageNotification,
                 new LoggingMessageNotificationParams
@@ -66,12 +74,19 @@ public static class McpServer
                 },
                 cancellationToken: ct);
 
+            var arguments = ctx.Params?.Arguments;
             foreach (var m in pr.Messages)
             {
+                var role = string.Equals(m.Role, "assistant", StringComparison.OrdinalIgnoreCase)
+                        ? Role.Assistant
+                        : Role.User;
+
                 result.Messages.Add(new PromptMessage
                 {
-                    Role = string.Equals(m.Role, "assistant", StringComparison.OrdinalIgnoreCase) ? Role.Assistant : Role.User,
-                    Content = new TextContentBlock { Text = m.Text }
+                    Role = role,
+                    Content = role == Role.User
+                    ? new TextContentBlock { Text = PromptTextFormatter.ApplyArguments(m.Text, arguments) }
+                    : new TextContentBlock { Text = m.Text }
                 });
             }
             return result;
