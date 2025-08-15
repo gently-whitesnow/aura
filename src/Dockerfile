@@ -7,9 +7,9 @@ WORKDIR /src
 # Копируем всю структуру проекта
 COPY . .
 
-RUN dotnet restore Aura.sln
+RUN dotnet restore OpenMcp.sln
 
-RUN dotnet publish Aura.Server/Aura.Server.csproj \
+RUN dotnet publish OpenMcp.Server/OpenMcp.Server.csproj \
      -c Release \
      --self-contained=false \
      -p:PublishSingleFile=false \
@@ -22,4 +22,4 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/publish .
 
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "Aura.Server.dll"]
+ENTRYPOINT ["dotnet", "OpenMcp.Server.dll"]

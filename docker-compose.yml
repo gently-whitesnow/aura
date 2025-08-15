@@ -4,7 +4,7 @@ services:
     ports:
       - 27017:27017
     environment:
-      MONGO_INITDB_DATABASE: aura
+      MONGO_INITDB_DATABASE: open_mcp
     volumes:
       - mongo_data:/data/db
 

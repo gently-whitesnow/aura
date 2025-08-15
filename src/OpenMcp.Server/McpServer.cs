@@ -1,20 +1,20 @@
 using System.Text.Json;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol;
-using Aura.Domain.Prompts;
-using Aura.Domain.Resources;
+using OpenMcp.Domain.Prompts;
+using OpenMcp.Domain.Resources;
 
-namespace Aura.Server;
+namespace OpenMcp.Server;
 
 public static class McpServer
 {
-    public static void AddAuraMcpServer(this WebApplicationBuilder builder)
+    public static void AddOpenMcpServer(this WebApplicationBuilder builder)
     {
         builder.Services.AddMcpServer(options =>
         {
             options.ServerInfo = new Implementation
             {
-                Name = "aura",
+                Name = "open-mcp",
                 Version = "0.1.0"
             };
         })
@@ -95,7 +95,7 @@ public static class McpServer
                 {
                     Name = r.Name,
                     Title = r.Title,
-                    Uri = $"aura://resource/{r.Name}",
+                    Uri = $"open-mcp://resource/{r.Name}",
                     MimeType = r.MimeType ?? "text/plain",
                     Description = r.Description,
                     Annotations = r.Annotations is null ? null : new Annotations
@@ -114,7 +114,7 @@ public static class McpServer
         {
             var svc = ctx.Services!.GetRequiredService<ResourcesService>();
             var uri = ctx.Params!.Uri;
-            var prefix = "aura://resource/";
+            var prefix = "open-mcp://resource/";
             var name = uri.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? uri[prefix.Length..] : uri;
             var data = await svc.GetLatestApprovedAsync(name, ct)
                     ?? throw new McpException("RESOURCE_NOT_FOUND");
