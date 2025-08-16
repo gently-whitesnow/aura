@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import type { PromptRecord, ResourceRecord } from '../types'
-import { Boxes, SquarePen } from 'lucide-react'
+import { WandSparkles, BookMarked } from 'lucide-react'
 import CreatePromptModal from '../components/CreatePromptModal'
 import CreateResourceModal from '../components/CreateResourceModal'
 import { Search } from 'lucide-react'
@@ -73,7 +73,7 @@ export default function HomePage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-medium flex-1">Промпты</h2>
-            <button type="button" className="btn btn-sm btn-outline btn-success" onClick={() => setShowCreatePrompt(true)}>Добавить</button>
+            <button type="button" className="btn btn-sm btn-outline btn-info" onClick={() => setShowCreatePrompt(true)}>Добавить</button>
           </div>
           {loadingPrompts && <div className="loading loading-dots" aria-live="polite" />}
           {errorPrompts && <div className="alert alert-error">{errorPrompts}</div>}
@@ -90,7 +90,7 @@ export default function HomePage() {
                 >
                   <div className="card-body p-4">
                     <div className="flex items-center gap-2">
-                      <SquarePen className="w-5 h-5 opacity-80" aria-hidden />
+                      <WandSparkles className="w-5 h-5 opacity-80" aria-hidden />
                       <h3 className="card-title text-base flex-1 truncate" title={a.title ?? ''}>
                         {a.title}
                       </h3>
@@ -113,7 +113,7 @@ export default function HomePage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-medium flex-1">Ресурсы</h2>
-            <button type="button" className="btn btn-sm btn-outline btn-success" onClick={() => setShowCreateResource(true)}>Добавить</button>
+            <button type="button" className="btn btn-sm btn-outline btn-info" onClick={() => setShowCreateResource(true)}>Добавить</button>
           </div>
           {loadingResources && <div className="loading loading-dots" aria-live="polite" />}
           {errorResources && <div className="alert alert-error">{errorResources}</div>}
@@ -130,7 +130,7 @@ export default function HomePage() {
                 >
                   <div className="card-body p-4">
                     <div className="flex items-center gap-2">
-                      <Boxes className="w-5 h-5 opacity-80" aria-hidden />
+                      <BookMarked className="w-5 h-5 opacity-80" aria-hidden />
                       <h3 className="card-title text-base flex-1 truncate" title={a.title ?? ''}>
                         {a.title}
                       </h3>

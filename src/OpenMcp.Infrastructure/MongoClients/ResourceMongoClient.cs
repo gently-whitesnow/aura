@@ -157,6 +157,34 @@ public sealed class ResourceMongoClient : IResourceRepository
             throw new InvalidOperationException("RESOURCE_VERSION_NOT_FOUND");
     }
 
+    public async Task UpdateStatusAsync(
+        string name,
+        int version,
+        Domain.Models.VersionStatus status,
+        string? adminLogin,
+        DateTime? now,
+        CancellationToken ct)
+    {
+        var filter = Builders<ResourceRecordDbModel>.Filter.Where(p => p.Name == name && p.Version == version);
+        var update = Builders<ResourceRecordDbModel>.Update
+            .Set(p => p.Status, status);
+
+        if (status == Domain.Models.VersionStatus.Approved)
+        {
+            update = update.Set(p => p.ApprovedAt, now)
+                           .Set(p => p.ApprovedBy, adminLogin);
+        }
+        else
+        {
+            update = update.Set(p => p.ApprovedAt, null)
+                           .Set(p => p.ApprovedBy, null);
+        }
+
+        var res = await _resources.UpdateOneAsync(filter, update, cancellationToken: ct);
+        if (res.MatchedCount == 0)
+            throw new InvalidOperationException("RESOURCE_VERSION_NOT_FOUND");
+    }
+
     public Task DeleteAllAsync(string name, CancellationToken ct)
     {
         return _resources.DeleteManyAsync(p => p.Name == name, ct);

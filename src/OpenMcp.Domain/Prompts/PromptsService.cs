@@ -55,6 +55,14 @@ public sealed class PromptsService
         await _prompts.ApproveAsync(Validation.NormalizeKey(name), version, adminLogin, DateTime.UtcNow, ct);
     }
 
+    public async Task UpdateStatusAsync(string name, int version, VersionStatus status, string adminLogin, CancellationToken ct)
+    {
+        if (!await _admins.IsAdminAsync(adminLogin, ct))
+            throw new UnauthorizedAccessException("NOT_ADMIN");
+
+        await _prompts.UpdateStatusAsync(Validation.NormalizeKey(name), version, status, adminLogin, DateTime.UtcNow, ct);
+    }
+
     public Task<PromptRecord?> GetActualAsync(string name, CancellationToken ct)
     {
         return _prompts.GetActualAsync(Validation.NormalizeKey(name), ct);

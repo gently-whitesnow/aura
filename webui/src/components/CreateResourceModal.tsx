@@ -41,9 +41,9 @@ export default function CreateResourceModal({ onSubmit, onClose }: Props) {
     setError(null)
     try {
       const payload: NewResourceVersionDto = {
-        title: title.trim() ? title.trim() : undefined,
+        title: title.trim() ? title.trim() : '',
         text: text,
-        description: description.trim() ? description.trim() : undefined,
+        description: description.trim() ? description.trim() : '',
         annotations: parsedAnnotations.ok ? parsedAnnotations.value : undefined
       }
       await onSubmit(normalizedKey, payload)

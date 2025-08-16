@@ -1,6 +1,10 @@
 export type ArtifactType = 'Prompt' | 'Resource'
 
-export type VersionStatus = 'Pending' | 'Approved' | 0 | 1
+export const VersionStatus = {
+  Pending: 0,
+  Approved: 1,
+  Declined: 2,
+};
 
 export type PromptMessage = { role: string; text: string }
 export type PromptArgument = { name: string; title?: string | null; description?: string | null; required?: boolean }
@@ -8,7 +12,7 @@ export type PromptArgument = { name: string; title?: string | null; description?
 export type PromptRecord = {
   name: string
   version: number
-  status: VersionStatus
+  status: number
   title?: string | null
   messages: PromptMessage[]
   arguments?: PromptArgument[] | null
@@ -23,7 +27,7 @@ export type ResourceAnnotations = { audience?: string[] | null; priority?: numbe
 export type ResourceRecord = {
   name: string
   version: number
-  status: VersionStatus
+  status: number
   title?: string | null
   uri: string
   text?: string | null

@@ -72,6 +72,18 @@ public sealed class ResourcesService
         await _changeNotifier.NotifyUpdatedAsync(uri, ct);
     }
 
+    public async Task UpdateStatusAsync(string name, int version, VersionStatus status, string adminLogin, CancellationToken ct)
+    {
+        if (!await _admins.IsAdminAsync(adminLogin, ct))
+            throw new UnauthorizedAccessException("NOT_ADMIN");
+
+        var normalized = Validation.NormalizeKey(name);
+        await _resources.UpdateStatusAsync(normalized, version, status, adminLogin, DateTime.UtcNow, ct);
+
+        var uri = $"open-mcp://resource/{normalized}";
+        await _changeNotifier.NotifyUpdatedAsync(uri, ct);
+    }
+
     public Task<ResourceRecord?> GetActualAsync(string name, CancellationToken ct)
     {
         return _resources.GetActualAsync(Validation.NormalizeKey(name), ct);

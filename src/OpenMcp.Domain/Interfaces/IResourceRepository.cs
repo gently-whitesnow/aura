@@ -13,6 +13,7 @@ public interface IResourceRepository
     Task<List<ResourceRecord>> ListLatestApprovedAsync(string? query, CancellationToken ct);
     Task InsertAsync(ResourceRecord record, CancellationToken ct);
     Task ApproveAsync(string name, int version, string approvedBy, DateTime approvedAt, CancellationToken ct);
+    Task UpdateStatusAsync(string name, int version, Models.VersionStatus status, string? adminLogin, DateTime? now, CancellationToken ct);
     Task DeleteAllAsync(string name, CancellationToken ct);
 }
 

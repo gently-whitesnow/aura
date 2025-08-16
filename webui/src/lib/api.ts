@@ -5,6 +5,7 @@ import type {
   ResourceRecord,
   NewPromptVersionDto,
   NewResourceVersionDto,
+  VersionStatus
 } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_BASE as string | undefined
@@ -67,6 +68,19 @@ export const api = {
       `v1/${primitivePath(type)}/${encodeURIComponent(key)}/versions/${version}/approve`,
       { method: 'POST' },
     ),
+
+  setStatus: (type: ArtifactType, key: string, version: number, status: VersionStatus) => {
+    const normalize = (s: VersionStatus): number => {
+      if (typeof s === 'number') return s
+      if (s === 'Approved') return 1
+      if (s === 'Declined') return 2
+      return 0
+    }
+    return http<void>(
+      `v1/${primitivePath(type)}/${encodeURIComponent(key)}/versions/${version}/status`,
+      { method: 'POST', body: JSON.stringify({ status: normalize(status) }) },
+    )
+  },
 }
 
 export function parseTypeFromPath(segment: string): ArtifactType {

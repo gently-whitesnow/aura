@@ -158,6 +158,35 @@ public sealed class PromptMongoClient : IPromptRepository
             throw new InvalidOperationException("PROMPT_VERSION_NOT_FOUND");
     }
 
+    public async Task UpdateStatusAsync(
+        string name,
+        int version,
+        Domain.Models.VersionStatus status,
+        string? adminLogin,
+        DateTime? now,
+        CancellationToken ct)
+    {
+        var filter = Builders<PromptRecordDbModel>.Filter.Where(p => p.Name == name && p.Version == version);
+        var update = Builders<PromptRecordDbModel>.Update
+            .Set(p => p.Status, status);
+
+        // Maintain approved audit fields if status is Approved, otherwise clear them
+        if (status == Domain.Models.VersionStatus.Approved)
+        {
+            update = update.Set(p => p.ApprovedAt, now)
+                           .Set(p => p.ApprovedBy, adminLogin);
+        }
+        else
+        {
+            update = update.Set(p => p.ApprovedAt, null)
+                           .Set(p => p.ApprovedBy, null);
+        }
+
+        var res = await _prompts.UpdateOneAsync(filter, update, cancellationToken: ct);
+        if (res.MatchedCount == 0)
+            throw new InvalidOperationException("PROMPT_VERSION_NOT_FOUND");
+    }
+
     public Task DeleteAllAsync(string name, CancellationToken ct)
     {
         return _prompts.DeleteManyAsync(p => p.Name == name, ct);

@@ -1,6 +1,6 @@
 // components/ResourceDetailsView.tsx
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import type { ResourceRecord, NewResourceVersionDto } from '../types'
+import type { ResourceRecord } from '../types'
 import { api } from '../lib/api'
 import { useUser } from '../store/user'
 import { HistoryPanel } from './HistoryPanel'
@@ -48,35 +48,19 @@ export function ResourceDetailsView({ keyName }: { keyName: string }) {
 
   useEffect(() => { load() }, [load])
 
-  const onApprove = async (v: number) => {
+  const onChangeStatus = async (v: number, status: number) => {
     try {
-      await api.approve('Resource', keyName, v)
+      await api.setStatus('Resource', keyName, v, status)
       await load()
-      setToast('Версия апрувнута')
+      setToast('Статус обновлён')
     } catch {
-      setToast('Ошибка апрува')
+      setToast('Ошибка смены статуса')
     }
   }
 
-  const onSetActive = async (v: number) => {
-    try {
-      await api.setActive('Resource', keyName, v)
-      await load()
-      setToast('Активная версия обновлена')
-    } catch {
-      setToast('Не удалось сделать активной')
-    }
-  }
+  // Явная смена активной версии не поддерживается: активной считается последняя Approved
 
-  const initialValues: NewResourceVersionDto | undefined = displayed
-    ? {
-        title: displayed.title ?? '',
-        uri: displayed.uri ?? '',
-        text: displayed.text ?? '',
-        description: displayed.description ?? '',
-        mimeType: displayed.mimeType ?? '',
-      }
-    : undefined
+  // Для ресурсов модалка создания не принимает initialValues
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -99,11 +83,7 @@ export function ResourceDetailsView({ keyName }: { keyName: string }) {
               {displayed.text && (
                 <pre className="p-3 bg-base-200 rounded text-sm overflow-auto">{displayed.text}</pre>
               )}
-              {previewVersion != null && displayed.status === 'Approved' && active?.version !== displayed.version && (
-                <button className="btn btn-sm btn-outline" onClick={() => onSetActive(displayed.version)}>
-                  Сделать активной
-                </button>
-              )}
+              {/* Активной считается последняя Approved версия */}
             </div>
           )}
         </Section>
@@ -116,8 +96,7 @@ export function ResourceDetailsView({ keyName }: { keyName: string }) {
             activeVersion={active?.version ?? null}
             isAdmin={!!info?.isAdmin}
             onPreview={setPreviewVersion}
-            onApprove={onApprove}
-            onSetActive={onSetActive}
+            onChangeStatus={onChangeStatus}
           />
         </Section>
       </div>
@@ -131,9 +110,6 @@ export function ResourceDetailsView({ keyName }: { keyName: string }) {
             await load()
           }}
           onClose={() => setEditingOpen(false)}
-          initialKey={keyName}
-          initialValues={initialValues}
-          lockKey
         />
       )}
 

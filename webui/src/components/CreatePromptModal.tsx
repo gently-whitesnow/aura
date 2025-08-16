@@ -146,7 +146,7 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
     try {
       const keyNorm = normalizeKey(key)
       const payload: NewPromptVersionDto = {
-        title: title.trim() || undefined,
+        title: title.trim() || '',
         messages: preparedMessages.length ? preparedMessages : [],
         arguments: preparedArgs.length ? preparedArgs : [],
       }
