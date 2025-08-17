@@ -134,7 +134,8 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
     isValidKey(normalizeKey(key)) &&
     preparedMessages.length > 0 &&
     preparedMessages.every(m => m.role === 'user' || m.role === 'assistant') &&
-    invalidPlaceholders.length === 0
+    invalidPlaceholders.length === 0 &&
+    title.trim().length > 0
 
   const addMessage = () => setMessages(prev => [...prev, { role: 'user', text: '' }])
   const removeMessage = (idx: number) => setMessages(prev => prev.filter((_, i) => i !== idx))
@@ -154,7 +155,7 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
     try {
       const keyNorm = normalizeKey(key)
       const payload: NewPromptVersionDto = {
-        title: title.trim() || '',
+        title: title.trim(),
         messages: preparedMessages.length ? preparedMessages : [],
         arguments: preparedArgs.length ? preparedArgs : [],
       }
@@ -176,7 +177,9 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
   return (
     <dialog open className="modal" onKeyDown={onKeyDown}>
       <div className="modal-box max-w-4xl">
-        <h3 className="font-bold text-lg">Создание промпта</h3>
+        <h3 className="font-bold text-lg">
+          {lockKey ? 'Новая версия промпта' : 'Создание промпта'}
+        </h3>
         <div className="py-3 space-y-4">
           {/* Ключ и заголовок */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

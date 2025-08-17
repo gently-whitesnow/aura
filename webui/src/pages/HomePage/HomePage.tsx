@@ -49,12 +49,19 @@ export default function HomePage() {
   return (
     <section className="container mx-auto px-4 lg:px-8 space-y-10 mt-10">
       {/* Поиск */}
-      <div className="sticky top-4 z-10 flex justify-center">
-        <SearchBar
-          value={q}
-          onChange={setQ}
-          placeholder="Поиск по заголовкам"
-        />
+      <div className="sticky top-4 z-10">
+        <div className="grid grid-cols-[1fr_minmax(20rem,48rem)_1fr] items-center">
+          <h3 className="justify-self-start text-3xl text-primary">OpenMCP</h3>
+
+          <SearchBar
+            value={q}
+            onChange={setQ}
+            placeholder="Поиск по заголовкам"
+            className="justify-self-center w-full max-w-md"
+          />
+
+          <div /> {/* симметрия справа */}
+        </div>
       </div>
 
       {/* Две секции: Промпты / Ресурсы */}

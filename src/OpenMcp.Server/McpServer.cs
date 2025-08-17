@@ -22,8 +22,7 @@ public static class McpServer
         .WithListPromptsHandler(async (ctx, ct) =>
         {
             var svc = ctx.Services!.GetRequiredService<PromptsService>();
-            var list = await svc.ListActualAsync(null, ct);
-            // var list = await svc.ListLatestApprovedAsync(null, ct);
+            var list = await svc.ListLatestApprovedAsync(null, ct);
             await ctx.Server.SendNotificationAsync(
                 NotificationMethods.LoggingMessageNotification,
                 new LoggingMessageNotificationParams
@@ -39,14 +38,10 @@ public static class McpServer
                 {
                     Name = p.Name,
                     Title = p.Title,
-                    // TODO?
-                    // Description = p.Title,
                     Arguments = p.Arguments?.Select(a => new PromptArgument
                     {
                         Name = a.Name,
                         Title = a.Title,
-                        // TODO?
-                        // Description = a.Description,
                         Required = a.Required
                     }).ToList()
                 }).ToList()
@@ -55,14 +50,11 @@ public static class McpServer
         .WithGetPromptHandler(async (ctx, ct) =>
         {
             var svc = ctx.Services!.GetRequiredService<PromptsService>();
-            // var pr = await svc.GetLatestApprovedAsync(ctx.Params!.Name, ct)
-            var pr = await svc.GetActualAsync(ctx.Params!.Name, ct)
+            var pr = await svc.GetLatestApprovedAsync(ctx.Params!.Name, ct)
                     ?? throw new McpException("PROMPT_NOT_FOUND");
 
             var result = new GetPromptResult
             {
-                // TODO?
-                // Description = pr.Title 
             };
             await ctx.Server.SendNotificationAsync(
                 NotificationMethods.LoggingMessageNotification,

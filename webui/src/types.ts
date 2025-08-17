@@ -53,7 +53,7 @@ export type NewPromptVersionDto = {
 }
 
 export type NewResourceVersionDto = {
-  title?: string
+  title: string
   text?: string
   description?: string
   annotations?: ResourceAnnotations
