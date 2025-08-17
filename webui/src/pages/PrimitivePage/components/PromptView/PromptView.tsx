@@ -5,7 +5,8 @@ import { type PromptRecord, type NewPromptVersionDto, VersionStatus, type Prompt
 import { api } from '@/lib/api'
 import { useUser } from '@/store/user'
 import { HistoryPanel } from '@/pages/PrimitivePage/components/HistoryPanel'
-import CreatePromptModal from '@/components/CreatePromptModal'
+import CreatePromptModal from '@/components/CreatePromptModal/CreatePromptModal'
+import { MessageList } from './components/MessageList'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
@@ -152,15 +153,7 @@ export function PromptView({ keyName }: { keyName: string }) {
 
                         <div>
                             <div className="font-medium mb-1">Сообщения:</div>
-                            {displayed.messages?.map((m, i) => {
-                                const c = m.content
-                                const text = c?.type === 'text' ? c.text : c?.type === 'resource_link' ? `resource: ${c.internalName}` : ''
-                                return (
-                                    <div key={i} className="flex-1 text-sm bg-base-200/60 p-3 rounded-md mt-1 whitespace-pre-wrap break-words leading-relaxed select-text">
-                                        {text}
-                                    </div>
-                                )
-                            })}
+                            <MessageList items={(displayed.messages as PromptMessage[]) ?? []} />
                         </div>
 
                     </div>

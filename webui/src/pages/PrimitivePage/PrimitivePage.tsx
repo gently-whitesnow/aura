@@ -1,7 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
-import { useMemo } from 'react'
 import type { ArtifactType } from '../../types'
-import { PromptView } from './components/PromptView'
+import { PromptView } from './components/PromptView/PromptView'
 import { ResourceView } from './components/ResourceView'
 
 export default function PrimitivePage() {
@@ -15,11 +14,11 @@ export default function PrimitivePage() {
     throw new Error('BAD_TYPE')
   }
 
-  const routeType: ArtifactType = useMemo(() => {
+  const routeType: ArtifactType = (() => {
     if (urlType) return parseTypeFromPath(urlType)
     const p = location.pathname.split('/')[1]
     return parseTypeFromPath(p)
-  }, [urlType])
+  })()
   const keyName = params.key as string
 
   return (

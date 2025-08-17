@@ -3,9 +3,8 @@ import type { NewPromptVersionDto, PromptMessage } from '@/types'
 import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import { isValidKey } from '@/lib/validation'
 import { KEY_HINT } from '@/lib/constants'
-import { api } from '@/lib/api'
-import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import AutoResizeTextarea from './AutoResizeTextarea'
+import AutoResizeTextarea from '../AutoResizeTextarea'
+import { ResourceSelector } from './components/ResourceSelector'
 
 type Props = {
   onSubmit: (key: string, payload: NewPromptVersionDto) => Promise<void>
@@ -29,54 +28,6 @@ const PLACEHOLDER_VALID_RE = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_./-]*)\s*\}\}/g
 const PLACEHOLDER_ANY_RE = /\{\{\s*([^}]*)\s*\}\}/g
 
 type ArgMeta = { title?: string; description?: string; required?: boolean }
-
-function ResourceSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [query, setQuery] = useState(value)
-  const debounced = useDebouncedValue(query, 300)
-  const [options, setOptions] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => { setQuery(value) }, [value])
-
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      if (!debounced.trim()) { setOptions([]); return }
-      setLoading(true)
-      try {
-        const list = await api.listResources(debounced.trim())
-        if (!cancelled) setOptions(list.map(r => r.name))
-      } catch { if (!cancelled) setOptions([]) }
-      finally { if (!cancelled) setLoading(false) }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [debounced])
-
-  return (
-    <div className="form-control">
-      <input
-        className="input input-bordered"
-        placeholder="Имя ресурса"
-        value={query}
-        onChange={(e) => { setQuery(e.target.value); onChange(e.target.value) }}
-      />
-      {loading ? (
-        <div className="text-xs opacity-60 mt-1">Загрузка…</div>
-      ) : options.length > 0 ? (
-        <ul className="menu bg-base-200 rounded-box mt-2">
-          {options.map(n => (
-            <li key={n}>
-              <button type="button" onClick={() => { onChange(n); setQuery(n) }}>{n}</button>
-            </li>
-          ))}
-        </ul>
-      ) : query.trim() ? (
-        <div className="text-xs opacity-60 mt-1">Совпадений не найдено</div>
-      ) : null}
-    </div>
-  )
-}
 
 export default function CreatePromptModal({ onSubmit, onClose, initialKey, initialValues, lockKey }: Props) {
   const [key, setKey] = useState(initialKey ?? '')
@@ -387,11 +338,11 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
               ) : <span />}
               <button
                 type="button"
-                className="btn btn-sm btn-primary"
+                className="btn btn-sm btn-primary btn-outline"
                 onClick={addMessage}
                 disabled={messages.some(m => (m.role === 'user' && (m.text ?? '').trim().length === 0) || (m.role === 'assistant' && (m.resourceName ?? '').trim().length === 0))}
               >
-                <Plus className="w-4 h-4" /> Добавить
+                <Plus className="w-4 h-4" /> Добавить сообщение
               </button>
             </div>
           </div>

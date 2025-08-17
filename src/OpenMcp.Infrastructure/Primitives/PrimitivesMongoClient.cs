@@ -39,7 +39,7 @@ public abstract class PrimitivesMongoClient<TPrimitive, TPrimitiveDbModel> : IPr
         if (!string.IsNullOrWhiteSpace(query))
         {
             var rx = new BsonRegularExpression(new Regex(Regex.Escape(query), RegexOptions.IgnoreCase));
-            filter &= Builders<TPrimitiveDbModel>.Filter.Regex(p => p.Title, rx);
+            filter &= Builders<TPrimitiveDbModel>.Filter.Regex(p => p.Title, rx) | Builders<TPrimitiveDbModel>.Filter.Regex(p => p.Name, rx);
         }
 
         var all = await PrimitivesCollection
@@ -105,7 +105,7 @@ public abstract class PrimitivesMongoClient<TPrimitive, TPrimitiveDbModel> : IPr
         if (!string.IsNullOrWhiteSpace(query))
         {
             var rx = new BsonRegularExpression(new Regex(Regex.Escape(query), RegexOptions.IgnoreCase));
-            filter &= Builders<TPrimitiveDbModel>.Filter.Regex(p => p.Title, rx);
+            filter &= Builders<TPrimitiveDbModel>.Filter.Regex(p => p.Title, rx) | Builders<TPrimitiveDbModel>.Filter.Regex(p => p.Name, rx);
         }
 
         // Sort by name asc, version desc, take first per name in memory
