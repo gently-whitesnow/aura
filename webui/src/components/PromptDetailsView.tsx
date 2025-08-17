@@ -1,6 +1,6 @@
 // components/PromptDetailsView.tsx
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import type { PromptRecord, NewPromptVersionDto } from '../types'
+import { type PromptRecord, type NewPromptVersionDto, VersionStatus } from '../types'
 import { api } from '../lib/api'
 import { useUser } from '../store/user'
 import { HistoryPanel } from './HistoryPanel.tsx'
@@ -25,14 +25,13 @@ export function PromptDetailsView({ keyName }: { keyName: string }) {
     const [err, setErr] = useState<string | null>(null)
     const [toast, setToast] = useState<string | null>(null)
 
-    // v == null -> показываем активную; v != null -> показываем превью конкретной версии
-    const [previewVersion, setPreviewVersion] = useState<number | null>(null)
+    const [displayVersion, setDisplayVersion] = useState<number | null>()
     const [editingOpen, setEditingOpen] = useState(false)
 
     const displayed = useMemo<PromptRecord | null>(() => {
-        if (previewVersion == null) return active
-        return history.find(v => v.version === previewVersion) ?? active
-    }, [active, history, previewVersion])
+        if (displayVersion == null) return active
+        return history.find(v => v.version === displayVersion) ?? active
+    }, [active, history, displayVersion])
 
     const load = useCallback(async () => {
         setLoading(true); setErr(null)
@@ -43,18 +42,21 @@ export function PromptDetailsView({ keyName }: { keyName: string }) {
             ])
             setActive(a)
             setHistory(h)
-            // если превью указывает на версию, которой уже нет — сбрасываем
-            if (a && previewVersion != null && !h.some(v => v.version === previewVersion)) {
-                setPreviewVersion(null)
-            }
+            setDisplayVersion(a?.version ?? 0)
         } catch {
             setErr('Ошибка загрузки')
         } finally {
             setLoading(false)
         }
-    }, [keyName, previewVersion])
+    }, [keyName])
 
     useEffect(() => { load() }, [load])
+
+    useEffect(() => {
+        if (displayVersion != null && !history.some(v => v.version === displayVersion)) {
+            setDisplayVersion(null)
+        }
+    }, [history, displayVersion])
 
     const onChangeStatus = async (v: number, status: number) => {
         try {
@@ -80,12 +82,12 @@ export function PromptDetailsView({ keyName }: { keyName: string }) {
         : undefined
 
     const isAdmin = !!info?.isAdmin
-    const isPreviewing = previewVersion != null
+    const isPreviewing = displayVersion != active?.version
     const displayedIsActive = displayed && active && displayed.version === active.version
-
+    const statusDescription = displayed?.status === VersionStatus.Approved ? 'Approved' : displayed?.status === VersionStatus.Pending ? 'Pending' : 'Declined'
     return (
         <div className="flex flex-col gap-4">
-            <Section title={isPreviewing ? `Предпросмотр v${previewVersion}` : 'Активная версия'}>
+            <Section title={isPreviewing ? `Предпросмотр v${displayVersion}` : 'Активная версия'}>
                 {loading && <div className="loading loading-dots loading-lg" />}
                 {err && <div className="alert alert-error">{err}</div>}
 
@@ -99,7 +101,7 @@ export function PromptDetailsView({ keyName }: { keyName: string }) {
                             <div className="flex-1">
                                 <div className="font-medium">{displayed.title || 'Без названия'}</div>
                                 <div className="text-xs opacity-60">
-                                    v{displayed.version} · статус: {displayed.status}
+                                    v{displayed.version} · статус: {statusDescription}
                                     {displayedIsActive ? ' · активная' : ''}
                                 </div>
                             </div>
@@ -150,21 +152,10 @@ export function PromptDetailsView({ keyName }: { keyName: string }) {
             <Section title="История версий">
                 <HistoryPanel
                     items={history}
-                    activeVersion={active?.version ?? null}
+                    activeVersion={active?.version ?? 0}
+                    displayVersion={displayVersion ?? 0}
                     isAdmin={isAdmin}
-                    // ВАЖНО: кликая по элементу истории, передаём его версию;
-                    // кликая по активной версии — передаём null, что сбрасывает превью.
-                    onPreview={(v: number | null) => {
-                        if (v == null) {
-                            setPreviewVersion(null)
-                            return
-                        }
-                        if (active && v === active.version) {
-                            setPreviewVersion(null)
-                        } else {
-                            setPreviewVersion(v)
-                        }
-                    }}
+                    onSelectVersion={(v) => setDisplayVersion(v)}
                     onChangeStatus={onChangeStatus}
                 />
             </Section>

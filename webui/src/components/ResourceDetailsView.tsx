@@ -95,7 +95,7 @@ export function ResourceDetailsView({ keyName }: { keyName: string }) {
             items={history}
             activeVersion={active?.version ?? null}
             isAdmin={!!info?.isAdmin}
-            onPreview={setPreviewVersion}
+            onSelectVersion={setPreviewVersion}
             onChangeStatus={onChangeStatus}
           />
         </Section>
