@@ -77,27 +77,20 @@ public static class McpServer
                 ContentBlock content;
                 if (m.Content is PromptTextContentBlock textContent)
                 {
-                    content = new TextContentBlock { Text = textContent.Text };
+                    content = new TextContentBlock { Text = PromptTextFormatter.ApplyArguments(textContent.Text, arguments) };
                 }
                 else if (m.Content is PromptResourceLinkBlock resourceLinkContent)
                 {
-                    var res = resources?.FirstOrDefault(r => r.Name == resourceLinkContent.InternalName);
+                    var res = resources?.OrderByDescending(r => r.Version).FirstOrDefault(r => r.Name == resourceLinkContent.InternalName);
                     if (res == null) throw new McpException("RESOURCE_NOT_FOUND");
-                    content = new ResourceLinkBlock
+                    content = new EmbeddedResourceBlock
                     {
-                        Name = res.Name,
-                        Uri = $"open-mcp://resource/{res.Name}",
-                        MimeType = res.MimeType ?? "text/plain",
-                        Description = res.Description,
-                        Annotations = res.Annotations is null ? null : new Annotations
+                        Resource = new TextResourceContents
                         {
-                            Audience = res.Annotations.Audience?.Select(s =>
-                                string.Equals(s, "assistant", StringComparison.OrdinalIgnoreCase) ? Role.Assistant : Role.User
-                            ).ToList(),
-                            Priority = res.Annotations.Priority,
-                            LastModified = res.Annotations.LastModified
-                        },
-                        Size = res.Size
+                            Text = res.Text ?? throw new McpException("RESOURCE_NOT_FOUND"),
+                            MimeType = res.MimeType ?? "text/plain",
+                            Uri = $"open-mcp://resource/{res.Name}",
+                        }
                     };
                 }
                 else
@@ -169,11 +162,33 @@ public static class McpServer
             var textContent = data.Text;
             if (!string.IsNullOrEmpty(textContent))
             {
-                return new ReadResourceResult { Contents = { new TextResourceContents { Text = textContent } } };
+                return new ReadResourceResult
+                {
+                    Contents =
+                    {
+                        new TextResourceContents
+                        {
+                            Text = textContent,
+                            MimeType = data.MimeType ?? "text/plain",
+                            Uri = $"open-mcp://resource/{name}"
+                        }
+                    }
+                };
             }
 
             // Fallback: return URI as text (client may resolve it)
-            return new ReadResourceResult { Contents = { new TextResourceContents { Text = data.Uri ?? "not supported" } } };
+            return new ReadResourceResult
+            {
+                Contents =
+                {
+                    new TextResourceContents
+                    {
+                        Text = data.Uri ?? "not supported",
+                        MimeType = data.MimeType ?? "text/plain",
+                        Uri = $"open-mcp://resource/{name}"
+                    }
+                }
+            };
         })
         .WithSubscribeToResourcesHandler((ctx, ct) =>
         {

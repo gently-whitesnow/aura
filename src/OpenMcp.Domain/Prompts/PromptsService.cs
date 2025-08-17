@@ -44,7 +44,7 @@ public sealed class PromptsService(
 
         if (internalResourcesNames.Length == 0) return (pr, null);
 
-        var resources = await resourcesMongoClient.ListResourcesMetadataAsync(internalResourcesNames, ct);
+        var resources = await resourcesMongoClient.ListApprovedResourcesMetadataAsync(internalResourcesNames, ct);
         return (pr, resources.ToArray());
     }
 }

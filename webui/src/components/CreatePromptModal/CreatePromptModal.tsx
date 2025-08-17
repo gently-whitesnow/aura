@@ -14,7 +14,7 @@ type Props = {
   lockKey?: boolean
 }
 
-type UiMessage = { role: 'user' | 'assistant'; text?: string; resourceName?: string }
+type UiMessage = { role: 'user' | 'assistant'; text?: string; resourceName?: string; resourceType?: 'text' | 'embedded' }
 type UiArgument = { name: string; title?: string | null; description?: string | null; required?: boolean }
 
 // Имя ключа нормализуем как раньше
@@ -35,12 +35,12 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
   const [messages, setMessages] = useState<UiMessage[]>(() => {
     if (initialValues?.messages?.length) {
       return (initialValues.messages as PromptMessage[]).map(m => {
-        if (m.role === 'user' && m.content?.type === 'text') return { role: 'user', text: m.content.text }
-        if (m.role === 'assistant' && m.content?.type === 'resource_link') return { role: 'assistant', resourceName: m.content.internalName }
-        return { role: m.role as UiMessage['role'], text: '' }
+        if (m.content?.type === 'text') return { role: m.role, text: m.content.text, resourceType: 'text' }
+        if (m.content?.type === 'resource_link') return { role: m.role, resourceName: m.content.internalName, resourceType: 'embedded' }
+        return { role: m.role, text: '', resourceType: 'text' }
       })
     }
-    return [{ role: 'user', text: '' }]
+    return [{ role: 'user', text: '', resourceType: 'text' }]
   })
 
   // Метаданные аргументов (name -> meta). Инициализируем из initialValues?.arguments
@@ -63,14 +63,14 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
   const preparedMessages: PromptMessage[] = useMemo(() => {
     const result: PromptMessage[] = []
     for (const m of messages) {
-      if (m.role === 'user') {
+      if (m.resourceType === 'text') {
         const text = (m.text ?? '').trim()
         if (text.length === 0) continue
-        result.push({ role: 'user', content: { type: 'text', text } })
+        result.push({ role: m.role, content: { type: 'text', text } })
       } else {
         const name = (m.resourceName ?? '').trim()
         if (name.length === 0) continue
-        result.push({ role: 'assistant', content: { type: 'resource_link', internalName: name } })
+        result.push({ role: m.role, content: { type: 'resource_link', internalName: name } })
       }
     }
     return result
@@ -88,7 +88,7 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
       let match: RegExpExecArray | null
 
       // поддерживаем плейсхолдеры только в user-тексте
-      if (m.role !== 'user') return
+      if (m.resourceType !== 'text') return
       const text = m.text ?? ''
       while ((match = PLACEHOLDER_VALID_RE.exec(text)) !== null) {
         inText.push(match[1])
@@ -112,7 +112,7 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
   const invalidPlaceholders = useMemo(() => {
     const invalid: string[] = []
     messages.forEach(m => {
-      if (m.role !== 'user') return
+      if (m.resourceType !== 'text') return
       const t = m.text ?? ''
       const any = [...t.matchAll(PLACEHOLDER_ANY_RE)].map(x => (x[1] ?? '').trim())
       const valid = new Set<string>([...t.matchAll(PLACEHOLDER_VALID_RE)].map(x => x[1]))
@@ -151,17 +151,17 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
     [computedArgNames, argsMeta]
   )
 
-  const hasEmptyUser = messages.some(m => m.role === 'user' && ((m.text ?? '').trim().length === 0))
-  const hasEmptyAssistant = messages.some(m => m.role === 'assistant' && ((m.resourceName ?? '').trim().length === 0))
+  const hasEmptyText = messages.some(m => m.resourceType === 'text' && ((m.text ?? '').trim().length === 0))
+  const hasEmptyEmbedded = messages.some(m => m.resourceType === 'embedded' && ((m.resourceName ?? '').trim().length === 0))
   const valid =
     isValidKey(normalizeKey(key)) &&
     preparedMessages.length > 0 &&
     preparedMessages.every(m => m.role === 'user' || m.role === 'assistant') &&
     invalidPlaceholders.length === 0 &&
     title.trim().length > 0 &&
-    !hasEmptyUser && !hasEmptyAssistant
+    !hasEmptyText && !hasEmptyEmbedded
 
-  const addMessage = () => setMessages(prev => [...prev, { role: 'user', text: '' }])
+  const addMessage = () => setMessages(prev => [...prev, { role: 'user', text: '', resourceType: 'text' }])
   const removeMessage = (idx: number) => setMessages(prev => prev.filter((_, i) => i !== idx))
   const moveMessage = (idx: number, dir: -1 | 1) =>
     setMessages(prev => {
@@ -258,16 +258,26 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
                         value={m.role}
                         onChange={(e) =>
                           setMessages(prev => prev.map((x, i) => (i === idx
-                            ? (e.target.value === 'user'
-                                ? { role: 'user', text: '' }
-                                : { role: 'assistant', resourceName: '' }
-                              )
+                            ? { ...x, role: e.target.value as 'user' | 'assistant' }
                             : x)))
                         }
                         aria-label="Роль"
                       >
-                        <option value="user">запрос</option>
-                        <option value="assistant">ресурс</option>
+                        <option value="user">user</option>
+                        <option value="assistant">assistant</option>
+                      </select>
+                      <select
+                        className="select select-bordered select-sm w-26"
+                        value={m.resourceType}
+                        onChange={(e) =>
+                          setMessages(prev => prev.map((x, i) => (i === idx
+                            ? { ...x, resourceType: e.target.value as 'text' | 'embedded' }
+                            : x)))
+                        }
+                        aria-label="Тип ресурса"
+                      >
+                        <option value="text">text</option>
+                        <option value="embedded">embedded</option>
                       </select>
 
                       <div className="flex-1" />
@@ -303,7 +313,7 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
                       </button>
                     </div>
 
-                    {m.role === 'user' ? (
+                    {m.resourceType === 'text' ? (
                       <AutoResizeTextarea
                         className="textarea textarea-bordered w-full min-h-28 max-h-[70vh] font-mono"
                         placeholder={'Сгенерируй юнит-тесты на {{framework}} для класса: {{className}}. Требования к ответу: 1) # Summary — кратко опиши стратегию покрытия. 2) # Tests — список тестов. 3) # Coverage — покрытие. 4) # Code — код тестов.'}
@@ -317,12 +327,12 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
                         autoCorrect="off"
                         autoCapitalize="off"
                       />
-                    ) : (
+                    ) : m.resourceType === 'embedded' ? (
                       <ResourceSelector
                         value={m.resourceName ?? ''}
                         onChange={(val) => setMessages(prev => prev.map((x, i) => (i === idx ? { ...x, resourceName: val } : x)))}
                       />
-                    )}
+                    ) : null}
                   </div>
                 </li>
               ))}
@@ -333,14 +343,14 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
             </div>
 
             <div className="flex justify-between">
-              {messages.every(m => m.role === 'user' && (m.text ?? '').trim().length === 0) ? (
+              {messages.every(m => m.resourceType === 'text' && (m.text ?? '').trim().length === 0) ? (
                 <span className="label-text-alt text-error mt-1">Необходимо добавить хотя бы одно сообщение</span>
               ) : <span />}
               <button
                 type="button"
                 className="btn btn-sm btn-primary btn-outline"
                 onClick={addMessage}
-                disabled={messages.some(m => (m.role === 'user' && (m.text ?? '').trim().length === 0) || (m.role === 'assistant' && (m.resourceName ?? '').trim().length === 0))}
+                disabled={messages.some(m => (m.resourceType === 'text' && (m.text ?? '').trim().length === 0) || (m.resourceType === 'embedded' && (m.resourceName ?? '').trim().length === 0))}
               >
                 <Plus className="w-4 h-4" /> Добавить сообщение
               </button>

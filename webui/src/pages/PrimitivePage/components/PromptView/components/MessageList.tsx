@@ -22,7 +22,7 @@ export function MessageRow({ msg, idx }: { msg: PromptMessage; idx: number }) {
   const Icon = isText ? MessageSquare : BookMarked
   const iconTone = isText ? 'text-primary bg-primary/10' : 'text-secondary bg-secondary/10'
 
-  const simplifiedRole = msg.role === 'user' ? 'запрос' : 'ресурс'
+  const simplifiedRole = msg.role === 'user' ? 'Роль: user' : 'Роль: assistant'
 
   async function copy(v: string) {
     try { await navigator.clipboard.writeText(v) } catch { /* ignore */ }
