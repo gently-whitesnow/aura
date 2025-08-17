@@ -40,11 +40,13 @@ namespace OpenMcp.Server.Api
                 }
             });
 
-            // удаление артефакта (и всех его версий) — только для админов
-            app.MapDelete("v1/{primitive}/{key}", async (HttpContext ctx, string primitive, string key, PromptsService prompts, ResourcesService resources, CancellationToken ct) =>
+            // удаление версии артефакта
+            app.MapDelete("v1/{primitive}/{key}/versions/{version}", async (HttpContext ctx, string primitive, string key, string version, PromptsService prompts, ResourcesService resources, CancellationToken ct) =>
             {
                 var login = HttpContextExtensions.GetLogin(ctx);
                 if (string.IsNullOrWhiteSpace(login)) return Results.BadRequest(new { error = "LOGIN_REQUIRED" });
+
+                if (!int.TryParse(version, out var ver)) return Results.BadRequest(new { error = "BAD_VERSION" });
 
                 try
                 {
@@ -52,10 +54,10 @@ namespace OpenMcp.Server.Api
                     switch (primitiveType)
                     {
                         case ArtifactType.Prompt:
-                            await prompts.DeleteAsync(key, login);
+                            await prompts.DeleteAsync(key, ver, login);
                             break;
                         case ArtifactType.Resource:
-                            await resources.DeleteWithNotifyAsync(key, login);
+                            await resources.DeleteWithNotifyAsync(key, ver, login);
                             break;
                     }
                     return Results.Ok();
@@ -68,8 +70,8 @@ namespace OpenMcp.Server.Api
 
             static ArtifactType Parse(string primitive) => primitive.ToLower() switch
             {
-                "prompt" or "prompts" => ArtifactType.Prompt,
-                "resource" or "resources" => ArtifactType.Resource,
+                "prompts" => ArtifactType.Prompt,
+                "resources" => ArtifactType.Resource,
                 _ => throw new Exception("BAD_TYPE")
             };
         }

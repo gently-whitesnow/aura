@@ -10,7 +10,7 @@ public interface IPrimitivesRepository<TPrimitive> where TPrimitive : IPrimitive
     Task<List<TPrimitive>> ListActualAsync(string? query, CancellationToken ct);
     Task<TPrimitive?> GetLatestAsync(string name, CancellationToken ct);
     Task<List<TPrimitive>> HistoryAsync(string name, CancellationToken ct);
-    Task DeleteAsync(string name);
+    Task DeleteAsync(string name, int version);
 
     // mcp-specific
     Task<List<TPrimitive>> ListLatestApprovedAsync(string? query, CancellationToken ct);

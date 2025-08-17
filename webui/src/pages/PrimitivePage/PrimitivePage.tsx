@@ -1,9 +1,9 @@
 import { Link, useParams } from 'react-router-dom'
 import { useMemo } from 'react'
-import { parseTypeFromPath } from '../lib/api'
-import type { ArtifactType } from '../types'
-import { PromptDetailsView } from '../components/PromptDetailsView'
-import { ResourceDetailsView } from '../components/ResourceDetailsView'
+import { parseTypeFromPath } from '../../lib/api'
+import type { ArtifactType } from '../../types'
+import { PromptView } from './components/PromptView'
+import { ResourceView } from './components/ResourceView'
 
 export default function PrimitivePage() {
   const params = useParams()
@@ -25,8 +25,8 @@ export default function PrimitivePage() {
       </nav>
 
       {routeType === 'Prompt'
-        ? <PromptDetailsView keyName={keyName} />
-        : <ResourceDetailsView keyName={keyName} />
+        ? <PromptView keyName={keyName} />
+        : <ResourceView keyName={keyName} />
       }
     </div>
   )

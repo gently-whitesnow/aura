@@ -1,10 +1,11 @@
 // components/PromptDetailsView.tsx
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { type PromptRecord, type NewPromptVersionDto, VersionStatus } from '../types'
-import { api } from '../lib/api'
-import { useUser } from '../store/user'
-import { HistoryPanel } from './HistoryPanel.tsx'
-import CreatePromptModal from './CreatePromptModal'
+import { Trash2 } from 'lucide-react'
+import { type PromptRecord, type NewPromptVersionDto, VersionStatus } from '@/types'
+import { api } from '@/lib/api'
+import { useUser } from '@/store/user'
+import { HistoryPanel } from '@/pages/PrimitivePage/components/HistoryPanel'
+import CreatePromptModal from '@/components/CreatePromptModal'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
@@ -17,7 +18,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     )
 }
 
-export function PromptDetailsView({ keyName }: { keyName: string }) {
+export function PromptView({ keyName }: { keyName: string }) {
     const { info } = useUser()
     const [active, setActive] = useState<PromptRecord | null>(null)
     const [history, setHistory] = useState<PromptRecord[]>([])
@@ -60,7 +61,7 @@ export function PromptDetailsView({ keyName }: { keyName: string }) {
 
     const onChangeStatus = async (v: number, status: number) => {
         try {
-            await api.setStatus('Prompt', keyName, v, status)
+            await api.setPromptStatus(keyName, v, status)
             await load()
             setToast('Статус обновлён')
         } catch {
@@ -106,7 +107,27 @@ export function PromptDetailsView({ keyName }: { keyName: string }) {
                                 </div>
                             </div>
 
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
+                                {isAdmin && displayed && (
+                                    <button
+                                        className="btn btn-ghost btn-xs text-error"
+                                        title="Удалить эту версию"
+                                        onClick={async () => {
+                                            if (!displayed) return
+                                            const ok = window.confirm(`Удалить версию v${displayed.version}?`)
+                                            if (!ok) return
+                                            try {
+                                                await api.deletePromptVersion(keyName, displayed.version)
+                                                setToast('Версия удалена')
+                                                await load()
+                                            } catch {
+                                                setToast('Ошибка удаления')
+                                            }
+                                        }}
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                                 <button
                                     className="btn btn-sm"
                                     onClick={() => setEditingOpen(true)}

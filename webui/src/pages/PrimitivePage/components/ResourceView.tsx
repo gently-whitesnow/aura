@@ -1,10 +1,11 @@
 // components/ResourceDetailsView.tsx
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import type { ResourceRecord } from '../types'
-import { api } from '../lib/api'
-import { useUser } from '../store/user'
-import { HistoryPanel } from './HistoryPanel'
-import CreateResourceModal from './CreateResourceModal'
+import { Trash2 } from 'lucide-react'
+import type { ResourceRecord } from '@/types'
+import { api } from '@/lib/api'
+import { useUser } from '@/store/user'
+import { HistoryPanel } from '@/pages/PrimitivePage/components/HistoryPanel'
+import CreateResourceModal from '@/components/CreateResourceModal'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -17,7 +18,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-export function ResourceDetailsView({ keyName }: { keyName: string }) {
+export function ResourceView({ keyName }: { keyName: string }) {
   const { info } = useUser()
   const [active, setActive] = useState<ResourceRecord | null>(null)
   const [history, setHistory] = useState<ResourceRecord[]>([])
@@ -50,7 +51,7 @@ export function ResourceDetailsView({ keyName }: { keyName: string }) {
 
   const onChangeStatus = async (v: number, status: number) => {
     try {
-      await api.setStatus('Resource', keyName, v, status)
+      await api.setResourceStatus(keyName, v, status)
       await load()
       setToast('Статус обновлён')
     } catch {
@@ -73,11 +74,33 @@ export function ResourceDetailsView({ keyName }: { keyName: string }) {
             <div className="space-y-3">
               <div className="flex items-start gap-2">
                 <div className="font-medium flex-1">{displayed.title}</div>
-                {previewVersion == null && (
-                  <button className="btn btn-sm" onClick={() => setEditingOpen(true)}>
-                    Редактировать
-                  </button>
-                )}
+                <div className="flex gap-2 items-center">
+                  {previewVersion == null && (
+                    <button className="btn btn-sm" onClick={() => setEditingOpen(true)}>
+                      Редактировать
+                    </button>
+                  )}
+                  {info?.isAdmin && (
+                    <button
+                      className="btn btn-ghost btn-xs text-error"
+                      title="Удалить эту версию"
+                      onClick={async () => {
+                        if (!displayed) return
+                        const ok = window.confirm(`Удалить версию v${displayed.version}?`)
+                        if (!ok) return
+                        try {
+                          await api.deleteResourceVersion(keyName, displayed.version)
+                          setToast('Версия удалена')
+                          await load()
+                        } catch {
+                          setToast('Ошибка удаления')
+                        }
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="text-sm opacity-70 break-all">URI: {displayed.uri}</div>
               {displayed.text && (

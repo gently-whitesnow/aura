@@ -167,9 +167,9 @@ public abstract class PrimitivesMongoClient<TPrimitive, TPrimitiveDbModel> : IPr
             throw new InvalidOperationException("PROMPT_VERSION_NOT_FOUND");
     }
 
-    public Task DeleteAsync(string name)
+    public Task DeleteAsync(string name, int version)
     {
-        return PrimitivesCollection.DeleteManyAsync(p => p.Name == name);
+        return PrimitivesCollection.DeleteOneAsync(p => p.Name == name && p.Version == version);
     }
 }
 

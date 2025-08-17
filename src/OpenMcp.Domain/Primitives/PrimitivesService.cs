@@ -67,12 +67,12 @@ public abstract class PrimitivesService<TPrimitive> where TPrimitive : IPrimitiv
         return _primitivesRepository.ListLatestApprovedAsync(query, ct);
     }
 
-    public async Task DeleteAsync(string name, string adminLogin)
+    public async Task DeleteAsync(string name, int version, string adminLogin)
     {
         if (!await _adminsRepository.IsAdminAsync(adminLogin, CancellationToken.None))
             throw new UnauthorizedAccessException("NOT_ADMIN");
 
-        await _primitivesRepository.DeleteAsync(Validation.NormalizeKey(name));
+        await _primitivesRepository.DeleteAsync(Validation.NormalizeKey(name), version);
     }
 }
 

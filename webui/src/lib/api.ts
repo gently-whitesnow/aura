@@ -63,16 +63,28 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  approve: (type: ArtifactType, key: string, version: number) =>
+  setPromptStatus: (key: string, version: number, status: number) =>
     http<void>(
-      `v1/${primitivePath(type)}/${encodeURIComponent(key)}/versions/${version}/approve`,
-      { method: 'POST' },
+      `v1/prompts/${encodeURIComponent(key)}/versions/${version}/status`,
+      { method: 'POST', body: JSON.stringify({ status }) },
     ),
 
-  setStatus: (type: ArtifactType, key: string, version: number, status: number) =>
+  setResourceStatus: (key: string, version: number, status: number) =>
     http<void>(
-      `v1/${primitivePath(type)}/${encodeURIComponent(key)}/versions/${version}/status`,
-      { method: 'POST', body: JSON.stringify({ status }) },
+      `v1/resources/${encodeURIComponent(key)}/versions/${version}/status`,
+        { method: 'POST', body: JSON.stringify({ status }) },
+      ),
+  
+  deletePromptVersion: (key: string, version: number) =>
+    http<void>(
+      `v1/prompts/${encodeURIComponent(key)}/versions/${version}`,
+      { method: 'DELETE' },
+    ),
+
+  deleteResourceVersion: (key: string, version: number) =>
+    http<void>(
+      `v1/resources/${encodeURIComponent(key)}/versions/${version}`,
+      { method: 'DELETE' },
     ),
 }
 

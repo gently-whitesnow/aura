@@ -48,10 +48,10 @@ public sealed class ResourcesService(
         await changeNotifier.NotifyUpdatedAsync(uri);
     }
 
-    public async Task DeleteWithNotifyAsync(string name, string adminLogin)
+    public async Task DeleteWithNotifyAsync(string name, int version, string adminLogin)
     {
         var normalized = Validation.NormalizeKey(name);
-        await base.DeleteAsync(normalized, adminLogin);
+        await base.DeleteAsync(normalized, version, adminLogin);
 
         var uri = $"open-mcp://resource/{normalized}";
         await changeNotifier.NotifyUpdatedAsync(uri);
