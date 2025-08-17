@@ -81,14 +81,6 @@ public abstract class PrimitivesMongoClient<TPrimitive, TPrimitiveDbModel> : IPr
         return db.ToDomain();
     }
 
-    public async Task<TPrimitive?> GetAsync(string name, int version, CancellationToken ct)
-    {
-        var db = await PrimitivesCollection
-            .Find(p => p.Name == name && p.Version == version)
-            .FirstOrDefaultAsync(ct);
-        return db?.ToDomain();
-    }
-
     public async Task<List<TPrimitive>> HistoryAsync(string name, CancellationToken ct)
     {
         var list = await PrimitivesCollection

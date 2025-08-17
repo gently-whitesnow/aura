@@ -29,8 +29,9 @@ else
 
 builder.Services.AddSingleton<PromptsService>();
 builder.Services.AddSingleton<ResourcesService>();
+builder.Services.AddSingleton<ResourcesMongoClient>();
+builder.Services.AddSingleton<IPrimitivesRepository<ResourceRecord>, ResourcesMongoClient>(sp => sp.GetRequiredService<ResourcesMongoClient>());
 builder.Services.AddSingleton<IPrimitivesRepository<PromptRecord>, PromptsMongoClient>();
-builder.Services.AddSingleton<IPrimitivesRepository<ResourceRecord>, ResourcesMongoClient>();
 builder.Services.AddSingleton<IResourceChangeNotifier, ResourceSubscriptionManager>();
 builder.Services.AddSingleton<IResourceSubscriptionManager, ResourceSubscriptionManager>();
 

@@ -33,7 +33,7 @@ public sealed class PromptRecordDbModel : IPrimitiveDbModel<PromptRecord>
             Version = Version,
             Status = Status,
             Title = Title,
-            Messages = Messages.Select(m => new PromptMessageRecord { Role = m.Role, Text = m.Text }).ToList(),
+            Messages = Messages.Select(m => m.ToDomain()).ToList(),
             Arguments = Arguments?.Select(a => new PromptArgumentRecord { Name = a.Name, Title = a.Title, Description = a.Description, Required = a.Required }).ToList(),
             CreatedAt = CreatedAt,
             CreatedBy = CreatedBy,
@@ -50,7 +50,7 @@ public sealed class PromptRecordDbModel : IPrimitiveDbModel<PromptRecord>
             Version = primitive.Version,
             Status = primitive.Status,
             Title = primitive.Title,
-            Messages = primitive.Messages.Select(m => new PromptMessageDbModel { Role = m.Role, Text = m.Text }).ToList(),
+            Messages = primitive.Messages.Select(PromptMessageDbModel.ToDb).ToList(),
             Arguments = primitive.Arguments?.Select(a => new PromptArgumentDbModel { Name = a.Name, Title = a.Title, Description = a.Description, Required = a.Required }).ToList(),
             CreatedAt = primitive.CreatedAt,
             CreatedBy = primitive.CreatedBy,
@@ -63,7 +63,10 @@ public sealed class PromptRecordDbModel : IPrimitiveDbModel<PromptRecord>
 public sealed class PromptMessageDbModel
 {
     public string Role { get; set; } = "user";
-    public string Text { get; set; } = string.Empty;
+    public PromptContentBlock Content { get; set; } = new PromptTextContentBlock { Text = string.Empty };
+
+    public PromptMessageRecord ToDomain() => new() { Role = Role, Content = Content };
+    public static PromptMessageDbModel ToDb(PromptMessageRecord primitive) => new() { Role = primitive.Role, Content = primitive.Content };
 }
 
 public sealed class PromptArgumentDbModel

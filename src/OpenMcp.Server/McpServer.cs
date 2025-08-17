@@ -3,6 +3,7 @@ using ModelContextProtocol.Protocol;
 using ModelContextProtocol;
 using OpenMcp.Domain.Prompts;
 using OpenMcp.Domain.Resources;
+using OpenMcp.Domain.Prompts.Models;
 
 namespace OpenMcp.Server;
 
@@ -50,8 +51,8 @@ public static class McpServer
         .WithGetPromptHandler(async (ctx, ct) =>
         {
             var svc = ctx.Services!.GetRequiredService<PromptsService>();
-            var pr = await svc.GetLatestApprovedAsync(ctx.Params!.Name, ct)
-                    ?? throw new McpException("PROMPT_NOT_FOUND");
+            var (prompts, resources) = await svc.GetLatestApprovedWithResourcesAsync(ctx.Params!.Name, ct);
+            if (prompts == null) throw new McpException("PROMPT_NOT_FOUND");
 
             var result = new GetPromptResult
             {
@@ -67,18 +68,47 @@ public static class McpServer
                 cancellationToken: ct);
 
             var arguments = ctx.Params?.Arguments;
-            foreach (var m in pr.Messages)
+            foreach (var m in prompts.Messages)
             {
                 var role = string.Equals(m.Role, "assistant", StringComparison.OrdinalIgnoreCase)
                         ? Role.Assistant
                         : Role.User;
 
+                ContentBlock content;
+                if (m.Content is PromptTextContentBlock textContent)
+                {
+                    content = new TextContentBlock { Text = textContent.Text };
+                }
+                else if (m.Content is PromptResourceLinkBlock resourceLinkContent)
+                {
+                    var res = resources?.FirstOrDefault(r => r.Name == resourceLinkContent.InternalName);
+                    if (res == null) throw new McpException("RESOURCE_NOT_FOUND");
+                    content = new ResourceLinkBlock
+                    {
+                        Name = res.Name,
+                        Uri = $"open-mcp://resource/{res.Name}",
+                        MimeType = res.MimeType ?? "text/plain",
+                        Description = res.Description,
+                        Annotations = res.Annotations is null ? null : new Annotations
+                        {
+                            Audience = res.Annotations.Audience?.Select(s =>
+                                string.Equals(s, "assistant", StringComparison.OrdinalIgnoreCase) ? Role.Assistant : Role.User
+                            ).ToList(),
+                            Priority = res.Annotations.Priority,
+                            LastModified = res.Annotations.LastModified
+                        },
+                        Size = res.Size
+                    };
+                }
+                else
+                {
+                    throw new McpException("UNSUPPORTED_CONTENT_TYPE");
+                }
+
                 result.Messages.Add(new PromptMessage
                 {
                     Role = role,
-                    Content = role == Role.User
-                    ? new TextContentBlock { Text = PromptTextFormatter.ApplyArguments(m.Text, arguments) }
-                    : new TextContentBlock { Text = m.Text }
+                    Content = content
                 });
             }
             return result;
