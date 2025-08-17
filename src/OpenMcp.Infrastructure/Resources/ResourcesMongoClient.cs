@@ -2,10 +2,11 @@ using OpenMcp.Domain.Resources.Models;
 using MongoDB.Driver;
 using OpenMcp.Infrastructure.Primitives;
 using OpenMcp.Infrastructure.Mongo;
+using OpenMcp.Domain.Resources;
 
 namespace OpenMcp.Infrastructure.Resources;
 
-public sealed class ResourcesMongoClient(MongoCollectionsProvider store) : PrimitivesMongoClient<ResourceRecord, ResourceRecordDbModel>
+public sealed class ResourcesMongoClient(MongoCollectionsProvider store) : PrimitivesMongoClient<ResourceRecord, ResourceRecordDbModel>, IResourcesMongoClient
 {
     protected override IMongoCollection<ResourceRecordDbModel> PrimitivesCollection => store.Resources;
 

@@ -6,7 +6,10 @@ export const VersionStatus = {
   Declined: 2,
 };
 
-export type PromptMessage = { role: string; text: string }
+export type PromptTextContentBlock = { type: 'text'; text: string }
+export type PromptResourceLinkBlock = { type: 'resource_link'; internalName: string }
+export type PromptContentBlock = PromptTextContentBlock | PromptResourceLinkBlock
+export type PromptMessage = { role: 'user' | 'assistant'; content: PromptContentBlock }
 export type PromptArgument = { name: string; title?: string | null; description?: string | null; required?: boolean }
 
 export type PromptRecord = {

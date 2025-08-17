@@ -1,12 +1,11 @@
 import type {
-  ArtifactType,
   UserInfo,
   PromptRecord,
   ResourceRecord,
   NewPromptVersionDto,
   NewResourceVersionDto,
 } from '@/types'
-// no enum type import; use numeric status values directly
+import { toSnakeCaseDeep, toCamelCaseDeep } from './case'
 
 const API_BASE = import.meta.env.VITE_API_BASE as string | undefined
 // Не шумим в dev: при пустом BASE используем прокси Vite
@@ -14,30 +13,42 @@ if (!API_BASE && import.meta.env.PROD) {
   console.warn('VITE_API_BASE не задан. В production это может привести к ошибкам API.')
 }
 
-type PrimitivePath = 'prompt' | 'prompts' | 'resource' | 'resources'
-
-function primitivePath(type: ArtifactType): PrimitivePath {
-  return type === 'Prompt' ? 'prompts' : 'resources'
-}
-
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const base = API_BASE ?? ''
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  // transform outgoing JSON body to snake_case
+  let transformedInit: RequestInit | undefined = init
+  if (init?.body !== undefined) {
+    try {
+      const originalBody = typeof init.body === 'string' ? JSON.parse(init.body) : init.body
+      const snake = toSnakeCaseDeep(originalBody)
+      transformedInit = { ...init, body: JSON.stringify(snake) }
+    } catch {
+      // if body is not JSON, keep as-is
+      transformedInit = init
+    }
+  }
+
   const res = await fetch(`${base}${normalizedPath}`, {
-    ...init,
-    headers: { 'content-type': 'application/json', ...(init?.headers as Record<string, string>) },
+    ...transformedInit,
+    headers: { 'content-type': 'application/json', ...(transformedInit?.headers as Record<string, string>) },
   })
   if (!res.ok) {
     let error: unknown
     try {
-      error = await res.json()
+      const errData = await res.json()
+      error = toCamelCaseDeep(errData)
     } catch {
       error = await res.text()
     }
     throw { status: res.status, error }
   }
   const ct = res.headers.get('content-type') || ''
-  return ct.includes('application/json') ? ((await res.json()) as T) : (undefined as T)
+  if (!ct.includes('application/json')) {
+    return undefined as T
+  }
+  const data = await res.json()
+  return toCamelCaseDeep(data) as T
 }
 
 export const api = {
@@ -87,14 +98,3 @@ export const api = {
       { method: 'DELETE' },
     ),
 }
-
-export function parseTypeFromPath(segment: string): ArtifactType {
-  const s = segment.toLowerCase()
-  if (s === 'prompt' || s === 'prompts') return 'Prompt'
-  if (s === 'resource' || s === 'resources') return 'Resource'
-  throw new Error('BAD_TYPE')
-}
-
-// no-op helpers kept for compatibility if needed later
-
-

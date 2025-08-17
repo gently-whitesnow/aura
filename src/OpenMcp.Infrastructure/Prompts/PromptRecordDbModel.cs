@@ -63,10 +63,20 @@ public sealed class PromptRecordDbModel : IPrimitiveDbModel<PromptRecord>
 public sealed class PromptMessageDbModel
 {
     public string Role { get; set; } = "user";
-    public PromptContentBlock Content { get; set; } = new PromptTextContentBlock { Text = string.Empty };
+    public PromptTextContentBlock? TextContent { get; set; }
+    public PromptResourceLinkBlock? ResourceLinkContent { get; set; }
 
-    public PromptMessageRecord ToDomain() => new() { Role = Role, Content = Content };
-    public static PromptMessageDbModel ToDb(PromptMessageRecord primitive) => new() { Role = primitive.Role, Content = primitive.Content };
+    public PromptMessageRecord ToDomain() {
+        if (TextContent != null) return new() { Role = Role, Content = TextContent };
+        if (ResourceLinkContent != null) return new() { Role = Role, Content = ResourceLinkContent };
+        throw new InvalidOperationException("Content is null");
+    }
+
+    public static PromptMessageDbModel ToDb(PromptMessageRecord primitive) {
+        if (primitive.Content is PromptTextContentBlock textContent) return new() { Role = primitive.Role, TextContent = textContent };
+        if (primitive.Content is PromptResourceLinkBlock resourceLinkContent) return new() { Role = primitive.Role, ResourceLinkContent = resourceLinkContent };
+        throw new InvalidOperationException("Content is null");
+    }
 }
 
 public sealed class PromptArgumentDbModel

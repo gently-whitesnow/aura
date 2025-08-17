@@ -1,8 +1,10 @@
 import { useMemo, useState, useCallback, useEffect } from 'react'
-import type { NewPromptVersionDto } from '@/types'
+import type { NewPromptVersionDto, PromptMessage } from '@/types'
 import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import { isValidKey } from '@/lib/validation'
 import { KEY_HINT } from '@/lib/constants'
+import { api } from '@/lib/api'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import AutoResizeTextarea from './AutoResizeTextarea'
 
 type Props = {
@@ -13,7 +15,7 @@ type Props = {
   lockKey?: boolean
 }
 
-type UiMessage = { role: 'user' | 'assistant'; text: string }
+type UiMessage = { role: 'user' | 'assistant'; text?: string; resourceName?: string }
 type UiArgument = { name: string; title?: string | null; description?: string | null; required?: boolean }
 
 // Имя ключа нормализуем как раньше
@@ -28,14 +30,67 @@ const PLACEHOLDER_ANY_RE = /\{\{\s*([^}]*)\s*\}\}/g
 
 type ArgMeta = { title?: string; description?: string; required?: boolean }
 
+function ResourceSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [query, setQuery] = useState(value)
+  const debounced = useDebouncedValue(query, 300)
+  const [options, setOptions] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => { setQuery(value) }, [value])
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      if (!debounced.trim()) { setOptions([]); return }
+      setLoading(true)
+      try {
+        const list = await api.listResources(debounced.trim())
+        if (!cancelled) setOptions(list.map(r => r.name))
+      } catch { if (!cancelled) setOptions([]) }
+      finally { if (!cancelled) setLoading(false) }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [debounced])
+
+  return (
+    <div className="form-control">
+      <input
+        className="input input-bordered"
+        placeholder="Имя ресурса"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); onChange(e.target.value) }}
+      />
+      {loading ? (
+        <div className="text-xs opacity-60 mt-1">Загрузка…</div>
+      ) : options.length > 0 ? (
+        <ul className="menu bg-base-200 rounded-box mt-2">
+          {options.map(n => (
+            <li key={n}>
+              <button type="button" onClick={() => { onChange(n); setQuery(n) }}>{n}</button>
+            </li>
+          ))}
+        </ul>
+      ) : query.trim() ? (
+        <div className="text-xs opacity-60 mt-1">Совпадений не найдено</div>
+      ) : null}
+    </div>
+  )
+}
+
 export default function CreatePromptModal({ onSubmit, onClose, initialKey, initialValues, lockKey }: Props) {
   const [key, setKey] = useState(initialKey ?? '')
   const [title, setTitle] = useState(initialValues?.title ?? '')
-  const [messages, setMessages] = useState<UiMessage[]>(
-    (initialValues?.messages?.length
-      ? initialValues.messages
-      : [{ role: 'user', text: '' }]) as UiMessage[]
-  )
+  const [messages, setMessages] = useState<UiMessage[]>(() => {
+    if (initialValues?.messages?.length) {
+      return (initialValues.messages as PromptMessage[]).map(m => {
+        if (m.role === 'user' && m.content?.type === 'text') return { role: 'user', text: m.content.text }
+        if (m.role === 'assistant' && m.content?.type === 'resource_link') return { role: 'assistant', resourceName: m.content.internalName }
+        return { role: m.role as UiMessage['role'], text: '' }
+      })
+    }
+    return [{ role: 'user', text: '' }]
+  })
 
   // Метаданные аргументов (name -> meta). Инициализируем из initialValues?.arguments
   const [argsMeta, setArgsMeta] = useState<Record<string, ArgMeta>>(() => {
@@ -54,10 +109,21 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
   const [loading, setLoading] = useState(false)
 
   // Подготовленные сообщения
-  const preparedMessages = useMemo(
-    () => messages.map(m => ({ role: m.role, text: m.text.trim() })).filter(m => m.text.length > 0),
-    [messages]
-  )
+  const preparedMessages: PromptMessage[] = useMemo(() => {
+    const result: PromptMessage[] = []
+    for (const m of messages) {
+      if (m.role === 'user') {
+        const text = (m.text ?? '').trim()
+        if (text.length === 0) continue
+        result.push({ role: 'user', content: { type: 'text', text } })
+      } else {
+        const name = (m.resourceName ?? '').trim()
+        if (name.length === 0) continue
+        result.push({ role: 'assistant', content: { type: 'resource_link', internalName: name } })
+      }
+    }
+    return result
+  }, [messages])
 
   // Скан аргументов:
   // 1) все уникальные {{placeholders}} по порядку первого вхождения
@@ -70,8 +136,10 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
       const inText: string[] = []
       let match: RegExpExecArray | null
 
-      // валидные
-      while ((match = PLACEHOLDER_VALID_RE.exec(m.text)) !== null) {
+      // поддерживаем плейсхолдеры только в user-тексте
+      if (m.role !== 'user') return
+      const text = m.text ?? ''
+      while ((match = PLACEHOLDER_VALID_RE.exec(text)) !== null) {
         inText.push(match[1])
       }
       // сброс lastIndex на всякий
@@ -93,8 +161,10 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
   const invalidPlaceholders = useMemo(() => {
     const invalid: string[] = []
     messages.forEach(m => {
-      const any = [...m.text.matchAll(PLACEHOLDER_ANY_RE)].map(x => (x[1] ?? '').trim())
-      const valid = new Set<string>([...m.text.matchAll(PLACEHOLDER_VALID_RE)].map(x => x[1]))
+      if (m.role !== 'user') return
+      const t = m.text ?? ''
+      const any = [...t.matchAll(PLACEHOLDER_ANY_RE)].map(x => (x[1] ?? '').trim())
+      const valid = new Set<string>([...t.matchAll(PLACEHOLDER_VALID_RE)].map(x => x[1]))
       any.forEach(raw => {
         if (!valid.has(raw) && raw.length > 0) invalid.push(raw)
       })
@@ -130,12 +200,15 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
     [computedArgNames, argsMeta]
   )
 
+  const hasEmptyUser = messages.some(m => m.role === 'user' && ((m.text ?? '').trim().length === 0))
+  const hasEmptyAssistant = messages.some(m => m.role === 'assistant' && ((m.resourceName ?? '').trim().length === 0))
   const valid =
     isValidKey(normalizeKey(key)) &&
     preparedMessages.length > 0 &&
     preparedMessages.every(m => m.role === 'user' || m.role === 'assistant') &&
     invalidPlaceholders.length === 0 &&
-    title.trim().length > 0
+    title.trim().length > 0 &&
+    !hasEmptyUser && !hasEmptyAssistant
 
   const addMessage = () => setMessages(prev => [...prev, { role: 'user', text: '' }])
   const removeMessage = (idx: number) => setMessages(prev => prev.filter((_, i) => i !== idx))
@@ -233,9 +306,12 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
                         className="select select-bordered select-sm w-26"
                         value={m.role}
                         onChange={(e) =>
-                          setMessages(prev =>
-                            prev.map((x, i) => (i === idx ? { ...x, role: e.target.value as UiMessage['role'] } : x))
-                          )
+                          setMessages(prev => prev.map((x, i) => (i === idx
+                            ? (e.target.value === 'user'
+                                ? { role: 'user', text: '' }
+                                : { role: 'assistant', resourceName: '' }
+                              )
+                            : x)))
                         }
                         aria-label="Роль"
                       >
@@ -276,39 +352,26 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
                       </button>
                     </div>
 
-                    <AutoResizeTextarea
-                      className="textarea textarea-bordered w-full min-h-28 max-h-[70vh] font-mono"
-                      placeholder={
-                        m.role === 'assistant'
-                          ? '// пример идеального теста (сокращённо)\n' +
-                          'using FluentAssertions;\n' +
-                          'using Xunit;\n' +
-                          '\n' +
-                          'public class ExampleTests\n' +
-                          '{\n' +
-                          '    [Fact]\n' +
-                          '    public void DoWork_Should_Return_Expected()\n' +
-                          '    {\n' +
-                          '        // Arrange\n' +
-                          '        var sut = new Example();\n' +
-                          '        // Act\n' +
-                          '        var result = sut.DoWork(42);\n' +
-                          '        // Assert\n' +
-                          '        result.Should().Be(42);\n' +
-                          '    }\n' +
-                          '}'
-                          : 'Сгенерируй юнит-тесты на {{framework}} для класса: {{className}}. Требования к ответу: 1) # Summary — кратко опиши стратегию покрытия. 2) # Tests — список тестов. 3) # Coverage — покрытие. 4) # Code — код тестов.'
-                      }
-                      value={m.text}
-                      onChange={(e) =>
-                        setMessages(prev => prev.map((x, i) => (i === idx ? { ...x, text: e.target.value } : x)))
-                      }
-                      minRows={8}
-                      maxRows={40}
-                      spellCheck={false}
-                      autoCorrect="off"
-                      autoCapitalize="off"
-                    />
+                    {m.role === 'user' ? (
+                      <AutoResizeTextarea
+                        className="textarea textarea-bordered w-full min-h-28 max-h-[70vh] font-mono"
+                        placeholder={'Сгенерируй юнит-тесты на {{framework}} для класса: {{className}}. Требования к ответу: 1) # Summary — кратко опиши стратегию покрытия. 2) # Tests — список тестов. 3) # Coverage — покрытие. 4) # Code — код тестов.'}
+                        value={m.text ?? ''}
+                        onChange={(e) =>
+                          setMessages(prev => prev.map((x, i) => (i === idx ? { ...x, text: e.target.value } : x)))
+                        }
+                        minRows={8}
+                        maxRows={40}
+                        spellCheck={false}
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                      />
+                    ) : (
+                      <ResourceSelector
+                        value={m.resourceName ?? ''}
+                        onChange={(val) => setMessages(prev => prev.map((x, i) => (i === idx ? { ...x, resourceName: val } : x)))}
+                      />
+                    )}
                   </div>
                 </li>
               ))}
@@ -319,14 +382,14 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
             </div>
 
             <div className="flex justify-between">
-              {messages.every(m => m.role === 'user' && m.text.trim().length === 0) ? (
+              {messages.every(m => m.role === 'user' && (m.text ?? '').trim().length === 0) ? (
                 <span className="label-text-alt text-error mt-1">Необходимо добавить хотя бы одно сообщение</span>
               ) : <span />}
               <button
                 type="button"
                 className="btn btn-sm btn-primary"
                 onClick={addMessage}
-                disabled={messages.some(m => m.role === 'user' && m.text.trim().length === 0)}
+                disabled={messages.some(m => (m.role === 'user' && (m.text ?? '').trim().length === 0) || (m.role === 'assistant' && (m.resourceName ?? '').trim().length === 0))}
               >
                 <Plus className="w-4 h-4" /> Добавить
               </button>

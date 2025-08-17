@@ -1,7 +1,7 @@
 // components/PromptDetailsView.tsx
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Trash2 } from 'lucide-react'
-import { type PromptRecord, type NewPromptVersionDto, VersionStatus } from '@/types'
+import { type PromptRecord, type NewPromptVersionDto, VersionStatus, type PromptMessage } from '@/types'
 import { api } from '@/lib/api'
 import { useUser } from '@/store/user'
 import { HistoryPanel } from '@/pages/PrimitivePage/components/HistoryPanel'
@@ -75,9 +75,7 @@ export function PromptView({ keyName }: { keyName: string }) {
     const initialValues: NewPromptVersionDto | undefined = displayed
         ? {
             title: displayed.title ?? '',
-            messages: displayed.messages?.length
-                ? displayed.messages
-                : [{ role: 'user', text: '' }],
+            messages: (displayed.messages as PromptMessage[]) ?? [],
             arguments: displayed.arguments ?? [],
         }
         : undefined
@@ -103,7 +101,6 @@ export function PromptView({ keyName }: { keyName: string }) {
                                 <div className="font-medium">{displayed.title || 'Без названия'}</div>
                                 <div className="text-xs opacity-60">
                                     v{displayed.version} · статус: {statusDescription}
-                                    {displayedIsActive ? ' · активная' : ''}
                                 </div>
                             </div>
 
@@ -156,10 +153,13 @@ export function PromptView({ keyName }: { keyName: string }) {
                         <div>
                             <div className="font-medium mb-1">Сообщения:</div>
                             {displayed.messages?.map((m, i) => {
-                                return <div key={i} className="flex-1 text-sm bg-base-200/60 p-3 rounded-md mt-1
-                                whitespace-pre-wrap break-words leading-relaxed select-text">
-                                    {m.text}
-                                </div>
+                                const c = m.content
+                                const text = c?.type === 'text' ? c.text : c?.type === 'resource_link' ? `resource: ${c.internalName}` : ''
+                                return (
+                                    <div key={i} className="flex-1 text-sm bg-base-200/60 p-3 rounded-md mt-1 whitespace-pre-wrap break-words leading-relaxed select-text">
+                                        {text}
+                                    </div>
+                                )
                             })}
                         </div>
 
