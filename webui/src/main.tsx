@@ -5,7 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import PrimitivePage from './pages/PrimitivePage.tsx'
 import { UserProvider } from './store/user.tsx'
-import HomePage from './pages/HomePage.tsx'
+import HomePage from './pages/HomePage/HomePage.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

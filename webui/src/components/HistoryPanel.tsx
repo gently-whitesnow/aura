@@ -1,6 +1,6 @@
-import { useMemo, useEffect } from 'react'
-import type { PromptRecord, ResourceRecord } from '../types'
-import { VersionStatus } from '../types'
+import { useMemo } from 'react'
+import type { PromptRecord, ResourceRecord } from '@/types'
+import { VersionStatus } from '@/types'
 
 type Item = PromptRecord | ResourceRecord
 

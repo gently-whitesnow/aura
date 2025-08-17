@@ -5,8 +5,8 @@ import type {
   ResourceRecord,
   NewPromptVersionDto,
   NewResourceVersionDto,
-  VersionStatus
-} from '../types'
+} from '@/types'
+// no enum type import; use numeric status values directly
 
 const API_BASE = import.meta.env.VITE_API_BASE as string | undefined
 // Не шумим в dev: при пустом BASE используем прокси Vite
@@ -69,18 +69,11 @@ export const api = {
       { method: 'POST' },
     ),
 
-  setStatus: (type: ArtifactType, key: string, version: number, status: VersionStatus) => {
-    const normalize = (s: VersionStatus): number => {
-      if (typeof s === 'number') return s
-      if (s === 'Approved') return 1
-      if (s === 'Declined') return 2
-      return 0
-    }
-    return http<void>(
+  setStatus: (type: ArtifactType, key: string, version: number, status: number) =>
+    http<void>(
       `v1/${primitivePath(type)}/${encodeURIComponent(key)}/versions/${version}/status`,
-      { method: 'POST', body: JSON.stringify({ status: normalize(status) }) },
-    )
-  },
+      { method: 'POST', body: JSON.stringify({ status }) },
+    ),
 }
 
 export function parseTypeFromPath(segment: string): ArtifactType {

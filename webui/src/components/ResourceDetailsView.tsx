@@ -93,10 +93,11 @@ export function ResourceDetailsView({ keyName }: { keyName: string }) {
         <Section title="История версий">
           <HistoryPanel
             items={history}
-            activeVersion={active?.version ?? null}
+            activeVersion={active?.version ?? 0}
             isAdmin={!!info?.isAdmin}
             onSelectVersion={setPreviewVersion}
             onChangeStatus={onChangeStatus}
+            displayVersion={previewVersion ?? (active?.version ?? 0)}
           />
         </Section>
       </div>

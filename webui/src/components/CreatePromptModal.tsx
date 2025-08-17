@@ -1,8 +1,8 @@
 import { useMemo, useState, useCallback, useEffect } from 'react'
-import type { NewPromptVersionDto } from '../types'
+import type { NewPromptVersionDto } from '@/types'
 import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
-import { isValidKey } from '../lib/validation'
-import { KEY_HINT } from '../lib/constants'
+import { isValidKey } from '@/lib/validation'
+import { KEY_HINT } from '@/lib/constants'
 import AutoResizeTextarea from './AutoResizeTextarea'
 
 type Props = {
@@ -14,7 +14,7 @@ type Props = {
 }
 
 type UiMessage = { role: 'user' | 'assistant'; text: string }
-type UiArgument = { name: string; title?: string; description?: string; required?: boolean }
+type UiArgument = { name: string; title?: string | null; description?: string | null; required?: boolean }
 
 // Имя ключа нормализуем как раньше
 function normalizeKey(s: string) {
@@ -66,7 +66,7 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
     const seen = new Set<string>()
     const ordered: string[] = []
 
-    messages.forEach((m, idx) => {
+    messages.forEach((m) => {
       const inText: string[] = []
       let match: RegExpExecArray | null
 
@@ -114,12 +114,19 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
   // Готовим аргументы к отправке (имя + мета)
   const preparedArgs: UiArgument[] = useMemo(
     () =>
-      computedArgNames.map(name => ({
-        name,
-        title: argsMeta[name]?.title?.trim() || undefined,
-        description: argsMeta[name]?.description?.trim() || undefined,
-        required: argsMeta[name]?.required ?? undefined,
-      })),
+      computedArgNames.map(name => {
+        const rawTitle = argsMeta[name]?.title?.trim() ?? ''
+        const rawDesc = argsMeta[name]?.description?.trim() ?? ''
+        const title: string | null = rawTitle.length > 0 ? rawTitle : null
+        const description: string | null = rawDesc.length > 0 ? rawDesc : null
+        const required = argsMeta[name]?.required
+        return {
+          name,
+          title,
+          description,
+          ...(required !== undefined ? { required } : {}),
+        }
+      }),
     [computedArgNames, argsMeta]
   )
 
