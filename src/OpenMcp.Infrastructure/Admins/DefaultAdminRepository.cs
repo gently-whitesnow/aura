@@ -1,6 +1,6 @@
-using OpenMcp.Domain.Interfaces;
+using OpenMcp.Domain.Admins;
 
-namespace OpenMcp.Infrastructure;
+namespace OpenMcp.Infrastructure.Admins;
 
 public sealed class DefaultAdminRepository : IAdminRepository
 {

@@ -1,7 +1,9 @@
 using OpenMcp.Infrastructure.Models;
 using MongoDB.Driver;
+using OpenMcp.Infrastructure.Prompts;
+using OpenMcp.Infrastructure.Resources;
 
-namespace OpenMcp.Infrastructure.MongoClients;
+namespace OpenMcp.Infrastructure.Mongo;
 
 public sealed class MongoCollectionsProvider
 {

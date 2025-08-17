@@ -18,8 +18,8 @@ export type PromptRecord = {
   arguments?: PromptArgument[] | null
   createdAt: string
   createdBy: string
-  approvedAt?: string | null
-  approvedBy?: string | null
+  updatedAt?: string | null
+  updatedBy?: string | null
 }
 
 export type ResourceAnnotations = { audience?: string[] | null; priority?: number | null; lastModified?: string | null }
@@ -37,8 +37,8 @@ export type ResourceRecord = {
   size?: number | null
   createdAt: string
   createdBy: string
-  approvedAt?: string | null
-  approvedBy?: string | null
+  updatedAt?: string | null
+  updatedBy?: string | null
 }
 
 export type UserInfo = {

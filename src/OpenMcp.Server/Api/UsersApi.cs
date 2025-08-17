@@ -1,4 +1,4 @@
-using OpenMcp.Domain.Interfaces;
+using OpenMcp.Domain.Admins;
 
 namespace OpenMcp.Server.Api
 {

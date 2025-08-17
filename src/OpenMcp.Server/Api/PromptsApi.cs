@@ -35,11 +35,11 @@ namespace OpenMcp.Server.Api
                 var payload = await ctx.Request.ReadFromJsonAsync<NewPromptVersionDto>(cancellationToken: ct);
                 if (payload is null) return Results.BadRequest(new { error = "BAD_BODY" });
 
-                var v = await svc.CreatePendingAsync(name, payload.Title, payload.Messages ?? new List<PromptMessageRecord>(), payload.Arguments, login, ct);
+                var v = await svc.CreateAsync(name, payload.Title, payload.Messages ?? new List<PromptMessageRecord>(), payload.Arguments, login);
                 return Results.Json(new { v.Version, v.Status });
             });
         }
 
-        public sealed record NewPromptVersionDto(string? Title, IList<PromptMessageRecord>? Messages, IList<PromptArgumentRecord>? Arguments);
+        public sealed record NewPromptVersionDto(string Title, IList<PromptMessageRecord>? Messages, IList<PromptArgumentRecord>? Arguments);
     }
 }

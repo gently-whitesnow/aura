@@ -1,4 +1,4 @@
-namespace OpenMcp.Domain.Interfaces;
+namespace OpenMcp.Domain.Admins;
 
 public interface IAdminRepository
 {

@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
-using OpenMcp.Domain.Interfaces;
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using OpenMcp.Domain.Resources;
 
 namespace OpenMcp.Server;
 
@@ -34,7 +34,7 @@ public sealed class ResourceSubscriptionManager : IResourceSubscriptionManager, 
         }
     }
 
-    public async Task NotifyUpdatedAsync(string resourceUri, CancellationToken ct = default)
+    public async Task NotifyUpdatedAsync(string resourceUri)
     {
         if (!_uriToSessions.TryGetValue(resourceUri, out var bySession) || bySession.Count == 0) return;
 
@@ -46,8 +46,7 @@ public sealed class ResourceSubscriptionManager : IResourceSubscriptionManager, 
             {
                 await server.SendNotificationAsync(
                     NotificationMethods.ResourceUpdatedNotification,
-                    new ResourceUpdatedNotificationParams { Uri = resourceUri },
-                    cancellationToken: ct);
+                    new ResourceUpdatedNotificationParams { Uri = resourceUri });
             }
             catch
             {

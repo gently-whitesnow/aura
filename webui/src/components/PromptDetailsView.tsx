@@ -134,20 +134,18 @@ export function PromptDetailsView({ keyName }: { keyName: string }) {
 
                         <div>
                             <div className="font-medium mb-1">Сообщения:</div>
-                            {/* <pre className="p-3 bg-base-200 rounded text-sm overflow-auto"> */}
                             {displayed.messages?.map((m, i) => {
-                                return <div key={i} className="flex items-center gap-2">
-                                    <div className="font-bold w-28">{m.role === 'user' ? 'запрос' : 'ресурс'}:</div>
-                                    <div className="flex-1 text-sm bg-base-200 p-1 rounded-md mt-1">{m.text}</div>
+                                return <div key={i} className="flex-1 text-sm bg-base-200/60 p-3 rounded-md mt-1
+                                whitespace-pre-wrap break-words leading-relaxed select-text">
+                                    {m.text}
                                 </div>
                             })}
-                            {/* </pre> */}
                         </div>
 
-                        {/* Активной считается последняя Approved версия */}
                     </div>
-                )}
-            </Section>
+                )
+                }
+            </Section >
 
             <Section title="История версий">
                 <HistoryPanel
@@ -160,35 +158,39 @@ export function PromptDetailsView({ keyName }: { keyName: string }) {
                 />
             </Section>
 
-            {editingOpen && (
-                <CreatePromptModal
-                    onSubmit={async (_k, payload) => {
-                        await api.createPromptVersion(keyName, payload)
-                        setEditingOpen(false)
-                        setToast('Версия отправлена на апрув')
-                        await load()
-                    }}
-                    onClose={() => setEditingOpen(false)}
-                    initialKey={keyName}
-                    {...(initialValues ? { initialValues } : {})}
-                    lockKey
-                />
-            )}
+            {
+                editingOpen && (
+                    <CreatePromptModal
+                        onSubmit={async (_k, payload) => {
+                            await api.createPromptVersion(keyName, payload)
+                            setEditingOpen(false)
+                            setToast('Версия отправлена на апрув')
+                            await load()
+                        }}
+                        onClose={() => setEditingOpen(false)}
+                        initialKey={keyName}
+                        {...(initialValues ? { initialValues } : {})}
+                        lockKey
+                    />
+                )
+            }
 
-            {toast && (
-                <div className="toast toast-end">
-                    <div className="alert alert-info" role="status">
-                        <span>{toast}</span>
-                        <button
-                            className="btn btn-ghost btn-xs"
-                            onClick={() => setToast(null)}
-                            aria-label="Закрыть"
-                        >
-                            ✕
-                        </button>
+            {
+                toast && (
+                    <div className="toast toast-end">
+                        <div className="alert alert-info" role="status">
+                            <span>{toast}</span>
+                            <button
+                                className="btn btn-ghost btn-xs"
+                                onClick={() => setToast(null)}
+                                aria-label="Закрыть"
+                            >
+                                ✕
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }

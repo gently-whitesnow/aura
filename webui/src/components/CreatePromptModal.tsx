@@ -3,6 +3,7 @@ import type { NewPromptVersionDto } from '../types'
 import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import { isValidKey } from '../lib/validation'
 import { KEY_HINT } from '../lib/constants'
+import AutoResizeTextarea from './AutoResizeTextarea'
 
 type Props = {
   onSubmit: (key: string, payload: NewPromptVersionDto) => Promise<void>
@@ -265,36 +266,39 @@ export default function CreatePromptModal({ onSubmit, onClose, initialKey, initi
                       </button>
                     </div>
 
-                    <textarea
-                      className="textarea textarea-bordered min-h-28"
+                    <AutoResizeTextarea
+                      className="textarea textarea-bordered w-full min-h-28 max-h-[70vh] font-mono"
                       placeholder={
                         m.role === 'assistant'
                           ? '// пример идеального теста (сокращённо)\n' +
-                            'using FluentAssertions;\n' +
-                            'using Xunit;\n' +
-                            '\n' +
-                            'public class ExampleTests\n' +
-                            '{\n' +
-                            '    [Fact]\n' +
-                            '    public void DoWork_Should_Return_Expected()\n' +
-                            '    {\n' +
-                            '        // Arrange\n' +
-                            '        var sut = new Example();\n' +
-                            '        // Act\n' +
-                            '        var result = sut.DoWork(42);\n' +
-                            '        // Assert\n' +
-                            '        result.Should().Be(42);\n' +
-                            '    }\n' +
-                            '}'
+                          'using FluentAssertions;\n' +
+                          'using Xunit;\n' +
+                          '\n' +
+                          'public class ExampleTests\n' +
+                          '{\n' +
+                          '    [Fact]\n' +
+                          '    public void DoWork_Should_Return_Expected()\n' +
+                          '    {\n' +
+                          '        // Arrange\n' +
+                          '        var sut = new Example();\n' +
+                          '        // Act\n' +
+                          '        var result = sut.DoWork(42);\n' +
+                          '        // Assert\n' +
+                          '        result.Should().Be(42);\n' +
+                          '    }\n' +
+                          '}'
                           : 'Сгенерируй юнит-тесты на {{framework}} для класса: {{className}}. Требования к ответу: 1) # Summary — кратко опиши стратегию покрытия. 2) # Tests — список тестов. 3) # Coverage — покрытие. 4) # Code — код тестов.'
                       }
                       value={m.text}
                       onChange={(e) =>
                         setMessages(prev => prev.map((x, i) => (i === idx ? { ...x, text: e.target.value } : x)))
                       }
+                      minRows={8}
+                      maxRows={40}
+                      spellCheck={false}
+                      autoCorrect="off"
+                      autoCapitalize="off"
                     />
-
-
                   </div>
                 </li>
               ))}

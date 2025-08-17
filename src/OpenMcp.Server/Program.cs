@@ -1,10 +1,16 @@
 ﻿using OpenMcp.Infrastructure;
-using OpenMcp.Domain.Interfaces;
 using OpenMcp.Server;
 using OpenMcp.Domain.Prompts;
 using OpenMcp.Domain.Resources;
 using OpenMcp.Server.Api;
-using OpenMcp.Infrastructure.MongoClients;
+using OpenMcp.Infrastructure.Prompts;
+using OpenMcp.Infrastructure.Admins;
+using OpenMcp.Infrastructure.Mongo;
+using OpenMcp.Domain.Primitives;
+using OpenMcp.Domain.Prompts.Models;
+using OpenMcp.Domain.Resources.Models;
+using OpenMcp.Infrastructure.Resources;
+using OpenMcp.Domain.Admins;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,12 +27,12 @@ if (loginHeader is not null)
 else
     builder.Services.AddSingleton<IAdminRepository, DefaultAdminRepository>();
 
-builder.Services.AddSingleton<IPromptRepository, PromptMongoClient>();
 builder.Services.AddSingleton<PromptsService>();
-builder.Services.AddSingleton<IResourceRepository, ResourceMongoClient>();
+builder.Services.AddSingleton<ResourcesService>();
+builder.Services.AddSingleton<IPrimitivesRepository<PromptRecord>, PromptsMongoClient>();
+builder.Services.AddSingleton<IPrimitivesRepository<ResourceRecord>, ResourcesMongoClient>();
 builder.Services.AddSingleton<IResourceChangeNotifier, ResourceSubscriptionManager>();
 builder.Services.AddSingleton<IResourceSubscriptionManager, ResourceSubscriptionManager>();
-builder.Services.AddSingleton<ResourcesService>();
 
 // MCP SDK
 builder.AddOpenMcpServer();

@@ -35,7 +35,7 @@ namespace OpenMcp.Server.Api
                 var payload = await ctx.Request.ReadFromJsonAsync<NewResourceVersionDto>(cancellationToken: ct);
                 if (payload is null) return Results.BadRequest(new { error = "BAD_BODY" });
 
-                var v = await svc.CreatePendingAsync(
+                var v = await svc.CreateAsync(
                     name,
                     payload.Title,
                     null,
@@ -43,14 +43,13 @@ namespace OpenMcp.Server.Api
                     payload.Description,
                     null,
                     payload.Annotations,
-                    login,
-                    ct);
+                    login);
                 return Results.Json(new { v.Version, v.Status });
             });
         }
 
         public sealed record NewResourceVersionDto(
-            string? Title,
+            string Title,
             string? Text,
             string? Description,
             AnnotationsRecord? Annotations
