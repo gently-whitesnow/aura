@@ -86,9 +86,8 @@ export function ResourceSelector({
 
     // Выбор из списка/по Enter
     function commitSelection(opt: Option) {
-        const label = opt.title || opt.name;
         skipNextFetchRef.current = true; // не ищем по label
-        setInput(label);                 // для пользователя — title
+        setInput(opt.name);              
         onChange(opt.name);              // наружу — name
     }
 
