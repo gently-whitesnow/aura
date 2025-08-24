@@ -7,6 +7,36 @@ services:
       MONGO_INITDB_DATABASE: open_mcp
     volumes:
       - mongo_data:/data/db
+    profiles: ["full", "back"]
+  
+  open-mcp-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: open-mcp-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      MONGO_CONNECTION: mongodb://mongo:27017
+    ports: ["8080:8080"]
+    depends_on:
+      mongo:
+        condition: service_started
+    profiles: ["back"]
+
+  open-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: open-mcp
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      UI_API_URL: http://localhost:8080
+      MONGO_CONNECTION: mongodb://mongo:27017
+    ports: ["8080:8080"]
+    depends_on:
+      mongo:
+        condition: service_started
+    profiles: ["full"]
 
 volumes:
   mongo_data:

@@ -83,7 +83,6 @@ export function PromptView({ keyName }: { keyName: string }) {
 
     const isAdmin = !!info?.isAdmin
     const isPreviewing = displayVersion != active?.version
-    const displayedIsActive = displayed && active && displayed.version === active.version
     const statusDescription = displayed?.status === VersionStatus.Approved ? 'Approved' : displayed?.status === VersionStatus.Pending ? 'Pending' : 'Declined'
     return (
         <div className="flex flex-col gap-4">

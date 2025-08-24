@@ -11,6 +11,7 @@ using OpenMcp.Domain.Prompts.Models;
 using OpenMcp.Domain.Resources.Models;
 using OpenMcp.Infrastructure.Resources;
 using OpenMcp.Domain.Admins;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,5 +48,32 @@ app.MapPromptsApi();
 app.MapAdminApi();
 app.MapResourcesApi();
 app.MapUsersApi();
+
+// Раздача статики и SPA-фолбэк (включается только если указан UI_API_URL)
+var uiApiUrl = Environment.GetEnvironmentVariable("UI_API_URL");
+if (!string.IsNullOrEmpty(uiApiUrl))
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+
+    // Рантайм-конфиг фронтенда: env.js
+    app.MapGet("/env.js", (HttpContext ctx) =>
+    {
+        var apiUrl = Environment.GetEnvironmentVariable("UI_API_URL") ?? string.Empty;
+        ctx.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+        var payload = "window.env=" + JsonSerializer.Serialize(new { API_URL = apiUrl }) + ";";
+        return Results.Text(payload, "application/javascript");
+    });
+
+    // SPA fallback для маршрутов фронтенда
+    app.MapFallback(() =>
+    {
+        var webRoot = app.Environment.WebRootPath ?? "wwwroot";
+        var indexPath = Path.Combine(webRoot, "index.html");
+        if (File.Exists(indexPath))
+            return Results.File(indexPath, "text/html");
+        return Results.NotFound();
+    });
+}
 
 app.Run();
