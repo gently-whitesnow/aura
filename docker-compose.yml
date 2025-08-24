@@ -7,7 +7,7 @@ services:
       MONGO_INITDB_DATABASE: open_mcp
     volumes:
       - mongo_data:/data/db
-    profiles: ["full", "back"]
+    profiles: ["full", "backend", "db"]
   
   open-mcp-api:
     build:
@@ -21,7 +21,7 @@ services:
     depends_on:
       mongo:
         condition: service_started
-    profiles: ["back"]
+    profiles: ["backend"]
 
   open-mcp:
     build:
