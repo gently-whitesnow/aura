@@ -27,6 +27,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # image: gently4005/open-mcp:latest
     container_name: open-mcp
     environment:
       ASPNETCORE_ENVIRONMENT: Development

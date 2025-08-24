@@ -75,6 +75,17 @@ public class Program
                 .AddHttpClientInstrumentation()
                 .AddPrometheusExporter());
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy", policy =>
+                {
+                    policy.SetIsOriginAllowed(_ => true)
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
+                });
+            });
+
             // MCP SDK
             builder.AddOpenMcpServer();
 
@@ -92,6 +103,7 @@ public class Program
             app.UseSerilogRequestLogging();
             app.MapHealthChecks("/_internal/ping");
             app.UseOpenTelemetryPrometheusScrapingEndpoint();
+            app.UseCors("CorsPolicy");
 
             // Раздача статики и SPA-фолбэк (включается только если указан UI_API_URL)
             var uiApiUrl = Environment.GetEnvironmentVariable("UI_API_URL");
