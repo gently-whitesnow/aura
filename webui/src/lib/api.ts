@@ -7,14 +7,14 @@ import type {
 } from '@/types'
 import { toSnakeCaseDeep, toCamelCaseDeep } from './case'
 
+const IS_DEV = import.meta.env.DEV
 const RUNTIME_BASE = typeof window !== 'undefined' ? window?.env?.API_URL : undefined
-const API_BASE = (RUNTIME_BASE && RUNTIME_BASE.trim() !== '')
-  ? RUNTIME_BASE
-  : (import.meta.env.VITE_API_BASE as string | undefined)
-// Не шумим в dev: при пустом BASE используем прокси Vite
-if (!API_BASE && import.meta.env.PROD) {
-  console.warn('VITE_API_BASE/UI_API_URL не задан. В production это может привести к ошибкам API.')
-}
+const BUILD_BASE = import.meta.env.VITE_API_BASE as string | undefined
+// В dev используем прокси Vite по умолчанию (пустая строка => относительные пути)
+// В prod предпочитаем рантайм URL (env.js), иначе build-time
+const API_BASE = IS_DEV
+  ? (BUILD_BASE ?? '')
+  : ((RUNTIME_BASE && RUNTIME_BASE.trim() !== '') ? RUNTIME_BASE : (BUILD_BASE ?? ''))
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const base = API_BASE ?? ''
