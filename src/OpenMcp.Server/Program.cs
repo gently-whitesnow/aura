@@ -50,7 +50,8 @@ public class Program
             // DI
             builder.Services.AddSingleton(new MongoCollectionsProvider(mongoConn, mongoDb));
 
-            if (loginHeader is not null)
+            var adminsSettings = builder.Configuration.GetSection("AdminsSettings:Enabled").Get<bool>();
+            if (adminsSettings)
                 builder.Services.AddSingleton<IAdminRepository, AdminMongoClient>();
             else
                 builder.Services.AddSingleton<IAdminRepository, DefaultAdminRepository>();
